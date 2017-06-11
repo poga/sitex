@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"strings"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
 )
@@ -91,6 +93,17 @@ func TestParseQueryParams(t *testing.T) {
 	assert.Equal(t, "/foo/1", resp.HeaderMap["Location"][0])
 }
 
+func TestParseProxy(t *testing.T) {
+	route, err := ParseRedirectRule([]byte("/ http://google.com  200"))
+	assert.NoError(t, err)
+	assert.Equal(t, 200, route.StatusCode)
+	assert.Equal(t, "/", route.Match)
+	assert.Equal(t, "http://google.com", route.To)
+
+	resp := testRequest(route, "GET", "/")
+	assert.Equal(t, 200, resp.Code)
+	assert.True(t, strings.Contains(resp.Body.String(), "<!doctype html>"))
+}
 func TestParseExcessiveFields(t *testing.T) {
 	_, err := ParseRedirectRule([]byte("/store id=:id  /blog/:id  301 foo"))
 	assert.Error(t, err)

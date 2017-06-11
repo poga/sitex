@@ -12,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"io/ioutil"
+
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -87,6 +89,33 @@ func (route *Route) statusCodeHandler(w http.ResponseWriter, r *http.Request, ps
 	if route.StatusCode >= 300 && route.StatusCode < 400 {
 		http.Redirect(w, r, route.CompileRedirectTo(r, ps), route.StatusCode)
 		return
+	}
+
+	if strings.HasPrefix(route.To, "http") {
+		req, err := http.NewRequest(r.Method, route.To, r.Body)
+		if err != nil {
+			w.WriteHeader(500)
+			return
+		}
+		client := http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			w.WriteHeader(500)
+			return
+		}
+		defer resp.Body.Close()
+
+		w.WriteHeader(resp.StatusCode)
+		for key, vals := range resp.Header {
+			w.Header().Set(key, vals[0])
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			w.WriteHeader(500)
+			return
+		}
+		w.Write(body)
+
 	}
 
 	wd, err := os.Getwd()
