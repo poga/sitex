@@ -1,0 +1,8 @@
+# redirect / to test.json
+/ /test.json 200
+
+# 301 redirect
+/foo /test.json
+
+# query params
+/bar id=:id /test-:id.json
