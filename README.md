@@ -8,42 +8,19 @@ A static web server with support to Netlify's [redirect rules](https://www.netli
 
 ## Usage
 
-Given the following directory tree:
+Run `sitex` in your site directory. For example:
 
 ```
-$ tree .
-.
-├── _redirects
-├── test-2.json
-└── test.json
-
-0 directories, 3 files
-```
-
-and the `_redirect` file:
-
-```
-# redirect / to test.json
-/ /test.json 200
-
-# 301 redirect
-/foo /test.json
-
-# query params
-/bar id=:id /test-:id.json
-```
-
-Start the server at the root of the directory:
-
-```
+$ git clone git@github.com:poga/sitex.git
+$ cd sitex/example
 $ sitex
 ```
+Then you got a web server which:
 
-Then
-
-* `/` will render `/test.json`
-* `/foo` will redirect to `/test.json`
-* `/bar?id=2` will render `/test-2.json`
+* `http://localhost:8080/` will render `/test.json`
+* `http://localhost:8080/test.json` will render the file
+* `http://localhost:8080/foo` will redirect to `/test.json`
+* `http://localhost:8080/bar?id=2` will render `/test-2.json`
 
 ## Redirects
 
