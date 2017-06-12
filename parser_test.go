@@ -12,19 +12,19 @@ import (
 )
 
 func TestParseComment(t *testing.T) {
-	route, err := ParseRedirectRule([]byte("# This is a comment"))
+	route, err := ParseRedirectRule(".", []byte("# This is a comment"))
 	assert.NoError(t, err)
 	assert.Nil(t, route)
 }
 
 func TestParseEmptyLine(t *testing.T) {
-	route, err := ParseRedirectRule([]byte("    "))
+	route, err := ParseRedirectRule(".", []byte("    "))
 	assert.NoError(t, err)
 	assert.Nil(t, route)
 }
 
 func TestParseBasicRule(t *testing.T) {
-	route, err := ParseRedirectRule([]byte("/ /foo"))
+	route, err := ParseRedirectRule(".", []byte("/ /foo"))
 	assert.NoError(t, err)
 	assert.Equal(t, 301, route.StatusCode)
 	assert.Equal(t, "/", route.Match)
@@ -36,7 +36,7 @@ func TestParseBasicRule(t *testing.T) {
 }
 
 func TestParseStatusCode(t *testing.T) {
-	route, err := ParseRedirectRule([]byte("/ /test/test.json 200"))
+	route, err := ParseRedirectRule(".", []byte("/ /test/test.json 200"))
 	assert.NoError(t, err)
 	assert.Equal(t, 200, route.StatusCode)
 	assert.Equal(t, "/", route.Match)
@@ -48,11 +48,11 @@ func TestParseStatusCode(t *testing.T) {
 }
 
 func TestParseInvalidStatusCode(t *testing.T) {
-	_, err := ParseRedirectRule([]byte("/ /foo bar"))
+	_, err := ParseRedirectRule(".", []byte("/ /foo bar"))
 	assert.Error(t, err)
 }
 func TestParsePlaceholderRule(t *testing.T) {
-	route, err := ParseRedirectRule([]byte("/news/:year /foo/:year"))
+	route, err := ParseRedirectRule(".", []byte("/news/:year /foo/:year"))
 	assert.NoError(t, err)
 	assert.Equal(t, 301, route.StatusCode)
 	assert.Equal(t, "/news/:year", route.Match)
@@ -60,7 +60,7 @@ func TestParsePlaceholderRule(t *testing.T) {
 }
 
 func TestParseSplatRule(t *testing.T) {
-	route, err := ParseRedirectRule([]byte("/news/* /:splat"))
+	route, err := ParseRedirectRule(".", []byte("/news/* /:splat"))
 	assert.NoError(t, err)
 	assert.Equal(t, 301, route.StatusCode)
 	assert.Equal(t, "/news/*splat", route.Match)
@@ -77,7 +77,7 @@ func TestParseSplatRule(t *testing.T) {
 }
 
 func TestParseQueryParams(t *testing.T) {
-	route, err := ParseRedirectRule([]byte("/test/test.json id=:id  /foo/:id  301"))
+	route, err := ParseRedirectRule(".", []byte("/test/test.json id=:id  /foo/:id  301"))
 	assert.NoError(t, err)
 	assert.Equal(t, 301, route.StatusCode)
 	assert.Equal(t, "/test/test.json", route.Match)
@@ -94,7 +94,7 @@ func TestParseQueryParams(t *testing.T) {
 }
 
 func TestParseProxy(t *testing.T) {
-	route, err := ParseRedirectRule([]byte("/ http://google.com  200"))
+	route, err := ParseRedirectRule(".", []byte("/ http://google.com  200"))
 	assert.NoError(t, err)
 	assert.Equal(t, 200, route.StatusCode)
 	assert.Equal(t, "/", route.Match)
@@ -105,7 +105,7 @@ func TestParseProxy(t *testing.T) {
 	assert.True(t, strings.Contains(resp.Body.String(), "<!doctype html>"))
 }
 func TestParseExcessiveFields(t *testing.T) {
-	_, err := ParseRedirectRule([]byte("/store id=:id  /blog/:id  301 foo"))
+	_, err := ParseRedirectRule(".", []byte("/store id=:id  /blog/:id  301 foo"))
 	assert.Error(t, err)
 }
 

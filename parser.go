@@ -9,7 +9,6 @@ import (
 
 	"strings"
 
-	"os"
 	"path/filepath"
 
 	"io/ioutil"
@@ -22,6 +21,7 @@ type Route struct {
 	Queries    map[string]string
 	StatusCode int
 	To         string
+	wd         string
 }
 
 func (route *Route) CompileRedirectTo(r *http.Request, ps httprouter.Params) string {
@@ -71,12 +71,7 @@ func (route *Route) Handler(w http.ResponseWriter, r *http.Request, ps httproute
 		if queryMatched {
 			route.statusCodeHandler(w, r, ps)
 		} else {
-			wd, err := os.Getwd()
-			if err != nil {
-				w.WriteHeader(500)
-				return
-			}
-			http.ServeFile(w, r, filepath.Join(wd, r.URL.Path))
+			http.ServeFile(w, r, filepath.Join(route.wd, r.URL.Path))
 		}
 		return
 	}
@@ -118,16 +113,11 @@ func (route *Route) statusCodeHandler(w http.ResponseWriter, r *http.Request, ps
 
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		w.WriteHeader(500)
-		return
-	}
-	http.ServeFile(w, r, filepath.Join(wd, route.CompileRedirectTo(r, ps)))
+	http.ServeFile(w, r, filepath.Join(route.wd, route.CompileRedirectTo(r, ps)))
 }
 
 // ParseRedirectRule parse a line based on netlify's redirect rule format,
-func ParseRedirectRule(line []byte) (*Route, error) {
+func ParseRedirectRule(wd string, line []byte) (*Route, error) {
 	// remove all comments
 	comment := regexp.MustCompile("#.+")
 	rule := comment.ReplaceAll(line, []byte(""))
@@ -148,7 +138,7 @@ func ParseRedirectRule(line []byte) (*Route, error) {
 		return nil, fmt.Errorf("Invalid Redirect Rule: %s", line)
 	}
 
-	route := Route{Queries: make(map[string]string)}
+	route := Route{Queries: make(map[string]string), wd: wd}
 
 	// = parse match
 	matcher, fields := takeField(fields)
