@@ -1,8 +1,8 @@
-# siteX
+# SiteX
 
 A HTTP static file server with support to Netlify's [redirect rules](https://www.netlify.com/docs/redirects/).
 
-`go get github.com/poga/siteX`
+`go get github.com/poga/sitex`
 
 ## Usage
 
@@ -39,11 +39,11 @@ $ sitex
 
 ## Redirects
 
-siteX is built from scratch to mimic Netlify's `redirect` behavior. For documents, see [offical document](https://www.netlify.com/docs/redirects/).
+SiteX is built from scratch to mimic Netlify's `redirect` behavior. For documents, see [offical document](https://www.netlify.com/docs/redirects/).
 
 ## Contribute
 
-Feel free to open an issue if you find difference between siteX and Netlify.
+Feel free to open an issue if you find difference between SiteX and Netlify.
 
 ## License
 
