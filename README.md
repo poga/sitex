@@ -1,6 +1,8 @@
 # SiteX
 
-A HTTP static file server with support to Netlify's [redirect rules](https://www.netlify.com/docs/redirects/).
+[![Go Report Card](https://goreportcard.com/badge/github.com/poga/sitex)](https://goreportcard.com/report/github.com/poga/sitex)
+
+A static web server with support to Netlify's [redirect rules](https://www.netlify.com/docs/redirects/).
 
 `go get github.com/poga/sitex`
 
