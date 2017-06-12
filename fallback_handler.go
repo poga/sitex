@@ -4,10 +4,11 @@ import "net/http"
 
 import "strings"
 
+// FallbackHandler works similiar to http.FileServer, but without directory index
 type FallbackHandler struct {
 }
 
-// Serving static files without director index
+// ServeHTTP Serving static files without director index
 func (h FallbackHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	if strings.HasSuffix(path, "/") {

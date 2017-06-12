@@ -16,6 +16,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// Route correspond to a line in the _redirect config
 type Route struct {
 	Match      string
 	Queries    map[string]string
@@ -24,6 +25,8 @@ type Route struct {
 	wd         string
 }
 
+// CompileRedirectTo returns a string representing the destination of a request
+// based on matched route, placeholder, splat, and query params.
 func (route *Route) CompileRedirectTo(r *http.Request, ps httprouter.Params) string {
 	var pattern = route.To
 	// is there any splat in the pattern?
@@ -58,6 +61,8 @@ func (route *Route) CompileRedirectTo(r *http.Request, ps httprouter.Params) str
 	return pattern
 }
 
+// Handler is a httprouter handler
+// the handler can be used directly on a httprouter. Check server.go for how
 func (route *Route) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// if there's queries to match
 	if len(route.Queries) > 0 {
@@ -80,6 +85,7 @@ func (route *Route) Handler(w http.ResponseWriter, r *http.Request, ps httproute
 	return
 }
 
+// IsProxy checks if the route is a proxy route (which redirect to a external http endpoint
 func (route *Route) IsProxy() bool {
 	return strings.HasPrefix(route.To, "http")
 }

@@ -11,8 +11,9 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func Serve(path string, addr string) error {
-	redirectConfig := filepath.Join(path, "_redirects")
+// Serve serves a directory with respect to _redirects config
+func Serve(workingDir string, addr string) error {
+	redirectConfig := filepath.Join(workingDir, "_redirects")
 	// if there's no redirect file, just serve static files
 	if _, err := os.Stat(redirectConfig); os.IsNotExist(err) {
 		http.Handle("/", http.FileServer(http.Dir(".")))
@@ -28,7 +29,7 @@ func Serve(path string, addr string) error {
 	// define route line by line
 	lines := bytes.Split(data, []byte("\n"))
 	for _, line := range lines {
-		route, err := NewRoute(path, line)
+		route, err := NewRoute(workingDir, line)
 		if err != nil {
 			return err
 		}
