@@ -36,7 +36,15 @@ func Serve(path string, addr string) error {
 		if route == nil {
 			continue
 		}
-		router.GET(route.Match, route.Handler)
+		if route.IsProxy() {
+			// if it's a proxy, we just define the route on all method
+			methods := []string{"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"}
+			for _, method := range methods {
+				router.Handle(method, route.Match, route.Handler)
+			}
+		} else {
+			router.GET(route.Match, route.Handler)
+		}
 	}
 	router.NotFound = FallbackHandler{}
 
