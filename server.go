@@ -29,7 +29,7 @@ func Serve(path string, addr string) error {
 	// define route line by line
 	lines := bytes.Split(data, []byte("\n"))
 	for _, line := range lines {
-		route, err := ParseRedirectRule(path, line)
+		route, err := NewRoute(path, line)
 		if err != nil {
 			return err
 		}

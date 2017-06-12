@@ -80,13 +80,17 @@ func (route *Route) Handler(w http.ResponseWriter, r *http.Request, ps httproute
 	return
 }
 
+func (route *Route) IsProxy() bool {
+	return strings.HasPrefix(route.To, "http")
+}
+
 func (route *Route) statusCodeHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if route.StatusCode >= 300 && route.StatusCode < 400 {
 		http.Redirect(w, r, route.CompileRedirectTo(r, ps), route.StatusCode)
 		return
 	}
 
-	if strings.HasPrefix(route.To, "http") {
+	if route.IsProxy() {
 		req, err := http.NewRequest(r.Method, route.To, r.Body)
 		if err != nil {
 			w.WriteHeader(500)
@@ -116,8 +120,8 @@ func (route *Route) statusCodeHandler(w http.ResponseWriter, r *http.Request, ps
 	http.ServeFile(w, r, filepath.Join(route.wd, route.CompileRedirectTo(r, ps)))
 }
 
-// ParseRedirectRule parse a line based on netlify's redirect rule format,
-func ParseRedirectRule(wd string, line []byte) (*Route, error) {
+// NewRoute parse a redirect rule and returns a route
+func NewRoute(wd string, line []byte) (*Route, error) {
 	// remove all comments
 	comment := regexp.MustCompile("#.+")
 	rule := comment.ReplaceAll(line, []byte(""))
