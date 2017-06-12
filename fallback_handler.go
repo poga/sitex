@@ -4,7 +4,7 @@ import "net/http"
 
 import "strings"
 
-// FallbackHandler works similiar to http.FileServer, but without directory index
+// FallbackHandler works similar to http.FileServer, but without directory index
 type FallbackHandler struct {
 }
 
