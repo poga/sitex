@@ -114,7 +114,7 @@ func (route *Route) statusCodeHandler(w http.ResponseWriter, r *http.Request, ps
 			return
 		}
 		w.Write(body)
-
+		return
 	}
 
 	http.ServeFile(w, r, filepath.Join(route.wd, route.CompileRedirectTo(r, ps)))
