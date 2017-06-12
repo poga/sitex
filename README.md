@@ -6,7 +6,7 @@ A HTTP static file server with support to Netlify's [redirect rules](https://www
 
 ## Usage
 
-For example, given the following directory tree:
+Given the following directory tree:
 
 ```
 $ tree .
@@ -18,7 +18,7 @@ $ tree .
 0 directories, 3 files
 ```
 
-and a `_redirect` file:
+and the `_redirect` file:
 
 ```
 # redirect / to test.json
@@ -36,6 +36,12 @@ Start the server at the root of the directory:
 ```
 $ sitex
 ```
+
+Then
+
+* `/` will render `/test.json`
+* `/foo` will redirect to `/test.json`
+* `/bar?id=2` will render `/test-2.json`
 
 ## Redirects
 
