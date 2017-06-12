@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 
@@ -22,7 +21,7 @@ func Serve(path string, addr string) error {
 
 	data, err := ioutil.ReadFile(redirectConfig)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	router := httprouter.New()
