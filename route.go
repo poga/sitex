@@ -32,7 +32,7 @@ func (route *Route) CompileRedirectTo(r *http.Request, ps httprouter.Params) str
 	// is there any splat in the pattern?
 	if strings.HasSuffix(pattern, ":splat") {
 		splat := ps.ByName("splat")
-		splat = splat[1:len(splat)] // remove "/" at the beginning
+		splat = splat[1:] // remove "/" at the beginning
 		return strings.Replace(pattern, ":splat", splat, 1)
 	}
 
@@ -51,7 +51,7 @@ func (route *Route) CompileRedirectTo(r *http.Request, ps httprouter.Params) str
 		vars := varName.FindAllString(pattern, -1)
 		result := pattern
 		for _, v := range vars {
-			name := v[1:len(v)]
+			name := v[1:]
 			result = strings.Replace(result, v, ps.ByName(name), 1)
 		}
 		return result
