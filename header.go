@@ -9,6 +9,8 @@ import (
 
 	"strings"
 
+	"crypto/subtle"
+
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -16,6 +18,7 @@ var (
 	commentLine  = regexp.MustCompile(`^\s*#`)
 	comment      = regexp.MustCompile("#.+")
 	leadingSpace = regexp.MustCompile(`^\s+`)
+	realm        = "Please enter your username and password for this site"
 )
 
 // HeaderRouter contains routes defined in _header file.
@@ -64,7 +67,7 @@ func NewHeaderRouter(config []byte) (*HeaderRouter, error) {
 		}
 		newPath, err := parseHeader(line, currentPath)
 		if err != nil {
-			return nil, fmt.Errorf("Incorrect header: %s", line)
+			return nil, err
 		}
 		if newPath == nil {
 			continue
@@ -73,7 +76,7 @@ func NewHeaderRouter(config []byte) (*HeaderRouter, error) {
 	}
 
 	if currentPath.Path != "" {
-		if len(currentPath.Headers) > 0 {
+		if len(currentPath.Headers) > 0 || len(currentPath.Auths) > 0 {
 			paths = append(paths, currentPath)
 		} else {
 			return nil, fmt.Errorf("unclosed path")
@@ -93,10 +96,36 @@ func NewHeaderRouter(config []byte) (*HeaderRouter, error) {
 type Path struct {
 	Path    string
 	Headers map[string][]string
+	Auths   []Auth
+}
+
+// Auth is a username/password pair which can be used to authentication with http basic auth
+type Auth struct {
+	Username string
+	Password string
 }
 
 // Handler is a httprouter handler which is used for adding headers to response
 func (path *Path) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	// if basic auth is required
+	if len(path.Auths) > 0 {
+		user, pass, ok := r.BasicAuth()
+		login := false
+		if ok {
+			for _, auth := range path.Auths {
+				if subtle.ConstantTimeCompare([]byte(user), []byte(auth.Username)) == 1 && subtle.ConstantTimeCompare([]byte(pass), []byte(auth.Password)) == 1 {
+					login = true
+					break
+				}
+			}
+		}
+		if !login {
+			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
+			w.WriteHeader(401)
+			w.Write([]byte("Unauthorized.\n"))
+			return
+		}
+	}
 	// joining multiple header
 	for k, header := range path.Headers {
 		w.Header().Set(k, strings.Join(header, ", "))
@@ -116,7 +145,7 @@ func parsePath(line []byte) *Path {
 		line = []byte(string(line) + "splat") // lazy way to do clone + concat
 	}
 
-	return &Path{Path: string(line), Headers: make(map[string][]string)}
+	return &Path{Path: string(line), Headers: make(map[string][]string), Auths: make([]Auth, 0)}
 }
 
 func parseHeader(line []byte, currentPath *Path) (*Path, error) {
@@ -130,12 +159,26 @@ func parseHeader(line []byte, currentPath *Path) (*Path, error) {
 
 	comps := bytes.Split(line, []byte(":"))
 	key := string(comps[0])
-	value := string(bytes.Join(comps[1:], []byte(":")))
+	value := strings.Trim(string(bytes.Join(comps[1:], []byte(":"))), " \t")
+
+	if key == "Basic-Auth" {
+		authPairs := strings.Split(value, " ")
+		if len(currentPath.Auths) > 0 {
+			return nil, fmt.Errorf("Duplicated Basic-Auth line: %s", line)
+		}
+		for _, pair := range authPairs {
+			p := strings.Split(pair, ":")
+			username := p[0]
+			password := p[1]
+			currentPath.Auths = append(currentPath.Auths, Auth{username, password})
+		}
+		return currentPath, nil
+	}
 
 	if _, ok := currentPath.Headers[key]; !ok {
 		currentPath.Headers[key] = make([]string, 0)
 	}
-	currentPath.Headers[key] = append(currentPath.Headers[key], strings.Trim(value, " \t"))
+	currentPath.Headers[key] = append(currentPath.Headers[key], value)
 
 	return currentPath, nil
 }

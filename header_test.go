@@ -143,9 +143,38 @@ func TestMatchMultiplePath(t *testing.T) {
 	assert.Equal(t, "baz", res.Header().Get("X-TEST"))
 }
 
+func TestPathBasicAuth(t *testing.T) {
+	config := `
+/login
+	Basic-Auth: foo:bar
+	`
+	router, err := NewHeaderRouter([]byte(config))
+	assert.NoError(t, err)
+	handle, params, _ := router.Lookup("GET", "/login")
+	assert.NotNil(t, handle)
+	assert.Nil(t, params)
+
+	res := testHeader(router, "GET", "/login")
+	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
+	assert.Equal(t, 401, res.Code)
+
+	res = testHeaderAuth(router, "GET", "/login", "foo", "bar")
+	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
+	assert.Equal(t, 200, res.Code)
+}
+
 func testHeader(router *HeaderRouter, method string, path string) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest(method, path, nil)
+	router.ServeHTTP(rec, req)
+
+	return rec
+}
+
+func testHeaderAuth(router *HeaderRouter, method string, path string, username string, password string) *httptest.ResponseRecorder {
+	rec := httptest.NewRecorder()
+	req, _ := http.NewRequest(method, path, nil)
+	req.SetBasicAuth(username, password)
 	router.ServeHTTP(rec, req)
 
 	return rec
