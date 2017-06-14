@@ -96,9 +96,9 @@ type Path struct {
 }
 
 func (path *Path) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	// joining multiple as described in RFC 7230
+	// joining multiple header
 	for k, header := range path.Headers {
-		w.Header().Set(k, strings.Join(header, ","))
+		w.Header().Set(k, strings.Join(header, ", "))
 	}
 }
 
@@ -109,6 +109,10 @@ func parsePath(line []byte) *Path {
 
 	if bytes.Compare(line, []byte("")) == 0 {
 		return nil
+	}
+
+	if bytes.HasSuffix(line, []byte("*")) {
+		line = []byte(string(line) + "splat") // lazy way to do clone + concat
 	}
 
 	return &Path{Path: string(line), Headers: make(map[string][]string)}
