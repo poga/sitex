@@ -28,6 +28,21 @@ func TestParseHeader(t *testing.T) {
 	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
+func TestParseHeaderWithInlineComment(t *testing.T) {
+	config := `
+/foo # hi
+	X-TEST-HEADER: bar #hello
+	`
+	router, err := NewHeaderRouter([]byte(config))
+	assert.NoError(t, err)
+	handle, params, _ := router.Lookup("GET", "/foo")
+	assert.NotNil(t, handle)
+	assert.Nil(t, params)
+
+	res := testHeader(router, "GET", "/foo")
+	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
+}
+
 func TestMultiKeyHeader(t *testing.T) {
 	config := `
 /foo

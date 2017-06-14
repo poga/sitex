@@ -104,7 +104,7 @@ func (path *Path) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.
 
 func parsePath(line []byte) *Path {
 	// remove inline comment
-	comment.ReplaceAll(line, []byte(""))
+	line = comment.ReplaceAll(line, []byte(""))
 	line = bytes.Trim(line, " \t")
 
 	if bytes.Compare(line, []byte("")) == 0 {
@@ -120,7 +120,7 @@ func parsePath(line []byte) *Path {
 
 func parseHeader(line []byte, currentPath *Path) (*Path, error) {
 	// remove inline comment
-	comment.ReplaceAll(line, []byte(""))
+	line = comment.ReplaceAll(line, []byte(""))
 	line = bytes.Trim(line, " \t")
 
 	if bytes.Compare(line, []byte("")) == 0 {
