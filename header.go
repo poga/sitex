@@ -129,15 +129,13 @@ func parseHeader(line []byte, currentPath *Path) (*Path, error) {
 	}
 
 	comps := bytes.Split(line, []byte(":"))
-	if len(comps) != 2 {
-		return nil, fmt.Errorf("Invalid header: %s", line)
-	}
 	key := string(comps[0])
+	value := string(bytes.Join(comps[1:], []byte(":")))
 
 	if _, ok := currentPath.Headers[key]; !ok {
 		currentPath.Headers[key] = make([]string, 0)
 	}
-	currentPath.Headers[key] = append(currentPath.Headers[key], string(bytes.Trim(comps[1], " \t")))
+	currentPath.Headers[key] = append(currentPath.Headers[key], strings.Trim(value, " \t"))
 
 	return currentPath, nil
 }
