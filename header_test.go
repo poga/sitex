@@ -91,6 +91,28 @@ func TestPathMatchingPlaceholder(t *testing.T) {
 	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
+func TestMatchMultiplePath(t *testing.T) {
+	config := `
+/bar/:x
+	X-TEST-HEADER: bar
+/baz
+	X-TEST: baz
+	`
+	router, err := NewHeaderRouter([]byte(config))
+	assert.NoError(t, err)
+	handle, params, _ := router.Lookup("GET", "/bar/abc")
+	assert.NotNil(t, handle)
+	assert.NotNil(t, params)
+	handle, params, _ = router.Lookup("GET", "/baz")
+	assert.NotNil(t, handle)
+	assert.Nil(t, params)
+
+	res := testHeader(router, "GET", "/bar/abc")
+	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
+	res = testHeader(router, "GET", "/baz")
+	assert.Equal(t, "baz", res.Header().Get("X-TEST"))
+}
+
 func testHeader(router *HeaderRouter, method string, path string) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest(method, path, nil)
