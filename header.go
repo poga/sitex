@@ -23,6 +23,7 @@ type HeaderRouter struct {
 	*httprouter.Router
 }
 
+// NewHeaderRouter creates a HeaderRouter based on _header file
 func NewHeaderRouter(config []byte) (*HeaderRouter, error) {
 	router := HeaderRouter{httprouter.New()}
 
@@ -56,7 +57,6 @@ func NewHeaderRouter(config []byte) (*HeaderRouter, error) {
 			currentPath = p
 			continue
 		}
-		fmt.Printf("line: %v\n", string(line))
 
 		// header shoud have leading space
 		if !leadingSpace.Match(line) {
@@ -81,7 +81,6 @@ func NewHeaderRouter(config []byte) (*HeaderRouter, error) {
 	}
 
 	for _, path := range paths {
-		fmt.Printf("Defining %s\n", path.Path)
 		// use GET because we don't really care about method
 		// All we care is performing lookup based on path
 		router.GET(path.Path, path.Handler)
@@ -90,11 +89,13 @@ func NewHeaderRouter(config []byte) (*HeaderRouter, error) {
 	return &router, nil
 }
 
+// Path represent one URL and their additional headers
 type Path struct {
 	Path    string
 	Headers map[string][]string
 }
 
+// Handler is a httprouter handler which is used for adding headers to response
 func (path *Path) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// joining multiple header
 	for k, header := range path.Headers {

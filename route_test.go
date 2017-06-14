@@ -63,6 +63,7 @@ func TestParseInvalidStatusCode(t *testing.T) {
 	_, err := NewRoute(".", []byte("/ /foo bar"))
 	assert.Error(t, err)
 }
+
 func TestParsePlaceholderRule(t *testing.T) {
 	route, err := NewRoute(".", []byte("/news/:year /foo/:year"))
 	assert.NoError(t, err)

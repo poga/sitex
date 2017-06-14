@@ -2,7 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/poga/sitex)](https://goreportcard.com/report/github.com/poga/sitex)
 
-A static web server with support to Netlify's [redirect rules](https://www.netlify.com/docs/redirects/).
+A static web server with support to Netlify's [redirect rules](https://www.netlify.com/docs/redirects/) and [custom headers](https://www.netlify.com/docs/headers-and-basic-auth/).
 
 `go get github.com/poga/sitex`
 
@@ -22,9 +22,11 @@ Then you got a web server which:
 * `http://localhost:8080/foo` will redirect to `/test.json`
 * `http://localhost:8080/bar?id=2` will render `/test-2.json`
 
-## Redirects
+## Redirects & Headers
 
-SiteX is built from scratch to mimic Netlify's `redirect` behavior. For documents, see [offical document](https://www.netlify.com/docs/redirects/).
+SiteX is built from scratch to mimic Netlify's `redirect` behavior. For documents, see [redirect document](https://www.netlify.com/docs/redirects/) and [header document](https://www.netlify.com/docs/headers-and-basic-auth/).
+
+**Notes**: SiteX use [httprouter](https://github.com/julienschmidt/httprouter) to handle routing. The router has only explict matches. Therefore, some configuration might not work.
 
 ## Contribute
 
