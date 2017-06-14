@@ -161,6 +161,66 @@ func TestPathBasicAuth(t *testing.T) {
 	res = testHeaderAuth(router, "GET", "/login", "foo", "bar")
 	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
 	assert.Equal(t, 200, res.Code)
+
+	res = testHeaderAuth(router, "GET", "/login", "foo", "baz")
+	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
+	assert.Equal(t, 401, res.Code)
+}
+
+func TestPathMultipleBasicAuth(t *testing.T) {
+	config := `
+/login
+	Basic-Auth: foo:bar aaa:bbb
+	`
+	router, err := NewHeaderRouter([]byte(config))
+	assert.NoError(t, err)
+	handle, params, _ := router.Lookup("GET", "/login")
+	assert.NotNil(t, handle)
+	assert.Nil(t, params)
+
+	res := testHeader(router, "GET", "/login")
+	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
+	assert.Equal(t, 401, res.Code)
+
+	res = testHeaderAuth(router, "GET", "/login", "foo", "bar")
+	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
+	assert.Equal(t, 200, res.Code)
+
+	res = testHeaderAuth(router, "GET", "/login", "aaa", "bbb")
+	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
+	assert.Equal(t, 200, res.Code)
+
+	res = testHeaderAuth(router, "GET", "/login", "foo", "baz")
+	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
+	assert.Equal(t, 401, res.Code)
+}
+
+func TestPathBasicAuthAndHeader(t *testing.T) {
+	config := `
+/login
+	Basic-Auth: foo:bar
+	X-TEST-HEADER: hello
+	`
+	router, err := NewHeaderRouter([]byte(config))
+	assert.NoError(t, err)
+	handle, params, _ := router.Lookup("GET", "/login")
+	assert.NotNil(t, handle)
+	assert.Nil(t, params)
+
+	res := testHeader(router, "GET", "/login")
+	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
+	assert.Equal(t, "hello", res.Header().Get("X-TEST-HEADER"))
+	assert.Equal(t, 401, res.Code)
+
+	res = testHeaderAuth(router, "GET", "/login", "foo", "bar")
+	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
+	assert.Equal(t, "hello", res.Header().Get("X-TEST-HEADER"))
+	assert.Equal(t, 200, res.Code)
+
+	res = testHeaderAuth(router, "GET", "/login", "foo", "baz")
+	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
+	assert.Equal(t, "hello", res.Header().Get("X-TEST-HEADER"))
+	assert.Equal(t, 401, res.Code)
 }
 
 func testHeader(router *HeaderRouter, method string, path string) *httptest.ResponseRecorder {

@@ -123,7 +123,6 @@ func (path *Path) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.
 			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
 			w.WriteHeader(401)
 			w.Write([]byte("Unauthorized.\n"))
-			return
 		}
 	}
 	// joining multiple header
