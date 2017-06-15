@@ -35,6 +35,18 @@ func TestParseBasicRule(t *testing.T) {
 	assert.Equal(t, "/foo", resp.HeaderMap["Location"][0])
 }
 
+func TestParseInlineComment(t *testing.T) {
+	route, err := NewRoute(".", []byte("/ /foo #hi"))
+	assert.NoError(t, err)
+	assert.Equal(t, 301, route.StatusCode)
+	assert.Equal(t, "/", route.Match)
+	assert.Equal(t, "/foo", route.To)
+
+	resp := testRequest(route, "GET", "/")
+	assert.Equal(t, 301, resp.Code)
+	assert.Equal(t, "/foo", resp.HeaderMap["Location"][0])
+}
+
 func TestParseStatusCode(t *testing.T) {
 	route, err := NewRoute(".", []byte("/ /test/test.json 200"))
 	assert.NoError(t, err)
@@ -51,6 +63,7 @@ func TestParseInvalidStatusCode(t *testing.T) {
 	_, err := NewRoute(".", []byte("/ /foo bar"))
 	assert.Error(t, err)
 }
+
 func TestParsePlaceholderRule(t *testing.T) {
 	route, err := NewRoute(".", []byte("/news/:year /foo/:year"))
 	assert.NoError(t, err)
