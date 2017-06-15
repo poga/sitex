@@ -106,6 +106,21 @@ func TestPathMatchingSplat(t *testing.T) {
 	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
+func TestPathMatchingSplatWithPrefix(t *testing.T) {
+	config := `
+/prefix/*
+	X-TEST-HEADER: bar
+	`
+	router, err := NewHeaderRouter([]byte(config))
+	assert.NoError(t, err)
+	handle, params, _ := router.Lookup("GET", "/prefix/foo")
+	assert.NotNil(t, handle)
+	assert.NotNil(t, params)
+
+	res := testHeader(router, "GET", "/prefix/foo")
+	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
+}
+
 func TestPathMatchingPlaceholder(t *testing.T) {
 	config := `
 /:foo/bar
