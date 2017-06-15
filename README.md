@@ -1,6 +1,8 @@
 # SiteX
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/poga/sitex)](https://goreportcard.com/report/github.com/poga/sitex)
+[![codecov](https://codecov.io/gh/poga/sitex/branch/master/graph/badge.svg)](https://codecov.io/gh/poga/sitex)
+[![Build Status](https://travis-ci.org/poga/sitex.svg?branch=master)](https://travis-ci.org/poga/sitex)
 
 A static web server with support to Netlify's [redirect and rewrite rules](https://www.netlify.com/docs/redirects/), [custom headers, and basic auth](https://www.netlify.com/docs/headers-and-basic-auth/).
 
