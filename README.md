@@ -2,7 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/poga/sitex)](https://goreportcard.com/report/github.com/poga/sitex)
 
-A static web server with support to redirect rules, custom headers, and basic auth.
+A static web server with support to Netlify's [redirect rules](https://www.netlify.com/docs/redirects/), [custom headers, and basic auth](https://www.netlify.com/docs/headers-and-basic-auth/).
 
 `go get github.com/poga/sitex`
 
