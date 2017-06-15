@@ -26,7 +26,7 @@ Then you got a web server which:
 
 SiteX is built from scratch to mimic Netlify's features. For documents, see Netlify's [redirect document](https://www.netlify.com/docs/redirects/) and [header document](https://www.netlify.com/docs/headers-and-basic-auth/).
 
-**Notes**: SiteX use [httprouter](https://github.com/julienschmidt/httprouter) to handle routing. The router has only explict matches. Therefore, some configuration might not work.
+**Note**: SiteX use [httprouter](https://github.com/julienschmidt/httprouter) to handle routing. The router has only explict matches. Therefore, some configuration might not work.
 
 ## Contribute
 
