@@ -2,7 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/poga/sitex)](https://goreportcard.com/report/github.com/poga/sitex)
 
-A static web server with support to Netlify's [redirect rules](https://www.netlify.com/docs/redirects/), [custom headers, and basic auth](https://www.netlify.com/docs/headers-and-basic-auth/).
+A static web server with support to Netlify's [redirect and rewrite rules](https://www.netlify.com/docs/redirects/), [custom headers, and basic auth](https://www.netlify.com/docs/headers-and-basic-auth/).
 
 `go get github.com/poga/sitex`
 
@@ -24,9 +24,45 @@ Then you got a web server which:
 
 ## Redirects & Headers
 
-SiteX is built from scratch to mimic Netlify's features. For documents, see Netlify's [redirect document](https://www.netlify.com/docs/redirects/) and [header document](https://www.netlify.com/docs/headers-and-basic-auth/).
+You can define redirects by adding `_redirects` file to the root of your directory.
 
-**Note**: SiteX use [httprouter](https://github.com/julienschmidt/httprouter) to handle routing. The router has only explict matches. Therefore, some configuration might not work.
+```
+# redirect / to test.json
+/ /test.json 200
+
+# 301 redirect
+/foo /test.json
+
+# redirect when query params matches
+/bar id=:id /test-:id.json
+```
+
+If you need to return custom headers or http basic authentication. add `_headers` file to the root of your directory.
+
+```
+## A path:
+/templates/index.html
+  # Headers for that path:
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+/templates/index2.html
+  X-Frame-Options: SAMEORIGIN
+
+# match splat
+/*
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+
+# basic auth
+/something/*
+  Basic-Auth: someuser:somepassword anotheruser:anotherpassword
+
+# match placeholder
+/foo/:bar
+  X-Frame-Options: DENY
+```
+
+SiteX is built from scratch to mimic Netlify's features. For detailed documents, see Netlify's [redirect document](https://www.netlify.com/docs/redirects/) and [header document](https://www.netlify.com/docs/headers-and-basic-auth/).
 
 ## Contribute
 
