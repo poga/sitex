@@ -10,9 +10,9 @@ import (
 )
 
 func TestExampleServer(t *testing.T) {
-	go func() {
-		Serve("./example", ":9069")
-	}()
+	server, err := NewServer("./example", ":9069")
+	assert.NoError(t, err)
+	go server.Start()
 
 	resp, err := sendReq("GET", "http://localhost:9069/test.json")
 	assert.NoError(t, err)

@@ -7,13 +7,24 @@ import (
 
 	"path/filepath"
 
-	"fmt"
+	"net"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-// Serve serves a directory with respect to _redirects config
-func Serve(workingDir string, addr string) error {
+// Server is an instance of SiteX server
+type Server struct {
+	router   *httprouter.Router
+	listener net.Listener
+}
+
+// Start starts the server
+func (s *Server) Start() {
+	http.Serve(s.listener, s.router)
+}
+
+// NewServer looks for `_headers` and `_redirects` files in the workingDir, parse rules, and return a Server
+func NewServer(workingDir string, addr string) (*Server, error) {
 	redirectConfig := filepath.Join(workingDir, "_redirects")
 	headerConfig := filepath.Join(workingDir, "_headers")
 
@@ -24,7 +35,7 @@ func Serve(workingDir string, addr string) error {
 	if err == nil {
 		headerRouters, err = loadHeaderConfig(workingDir, data)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 	data, err = ioutil.ReadFile(redirectConfig)
@@ -34,8 +45,11 @@ func Serve(workingDir string, addr string) error {
 
 	router.NotFound = FileServer{workingDir, headerRouters}
 
-	fmt.Printf("Serving %s at %s\n", workingDir, addr)
-	return http.ListenAndServe(addr, router)
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+	return &Server{router, listener}, nil
 }
 
 func loadHeaderConfig(workingDir string, config []byte) ([]HeaderRouter, error) {
