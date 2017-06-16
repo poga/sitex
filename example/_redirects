@@ -6,3 +6,6 @@
 
 # query params
 /bar id=:id /test-:id.json
+
+# proxy
+/google https://google.com 200

@@ -39,6 +39,11 @@ func TestExampleServer(t *testing.T) {
 	assert.Equal(t, 301, resp.StatusCode)
 	assert.Equal(t, "", resp.Header.Get("X-TEST-HEADER"))
 	assert.Equal(t, "/test-2.json", resp.Header.Get("Location"))
+
+	resp, err = sendReq("GET", "http://localhost:9069/google")
+	assert.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode)
+	assert.Equal(t, "", resp.Header.Get("X-TEST-HEADER"))
 }
 
 func sendReq(method string, url string) (*http.Response, error) {
