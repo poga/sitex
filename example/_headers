@@ -1,5 +1,7 @@
 /test.json
-  X-TEST-HEADER: SiteX
+  # Headers for that path:
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
 
 /test-:id.json
   X-TEST-HEADER: SiteXID

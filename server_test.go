@@ -17,7 +17,8 @@ func TestExampleServer(t *testing.T) {
 	resp, err := sendReq("GET", "http://localhost:9069/test.json")
 	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode)
-	assert.Equal(t, "SiteX", resp.Header.Get("X-TEST-HEADER"))
+	assert.Equal(t, "DENY", resp.Header.Get("X-Frame-Options"))
+	assert.Equal(t, "1; mode=block", resp.Header.Get("X-XSS-Protection"))
 	body, err := ioutil.ReadAll(resp.Body)
 	assert.Equal(t, "{\"foo\": \"bar\"}\n", string(body))
 

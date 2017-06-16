@@ -10,13 +10,40 @@ A static web server with support to Netlify's [redirect and rewrite rules](https
 
 ## Usage
 
-Run `sitex` in your site directory. For example:
+Define the redirect rules with `_redirects` file.
 
 ```
-$ git clone git@github.com:poga/sitex.git
-$ cd sitex
-$ sitex -dir example
-Serving example/ at :8080
+# redirect / to test.json
+/ /test.json 200
+
+# 301 redirect
+/foo /test.json
+
+# query params
+/bar id=:id /test-:id.json
+
+# proxy
+/google https://google.com 200
+```
+
+You can also define custom headers and/or basic authentication with `_headers` file.
+
+```
+# A path:
+/test.json
+  # Headers for that path:
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+
+# basic auth
+/something/*
+  Basic-Auth: someuser:somepassword anotheruser:anotherpassword
+```
+
+Start SiteX server with `sitex` command.
+
+```
+$ sitex
 ```
 Now you got a web server which:
 
@@ -25,14 +52,14 @@ Now you got a web server which:
 * `http://localhost:8080/foo` will redirect to `/test.json`
 * `http://localhost:8080/bar?id=2` will render `/test-2.json`
 
-#### CLI options
+### CLI options
 
 * dir: the directory you want to server. **Default: current working directory**.
 * port: port to listen. **Default: 8080**.
 
 ## Rules
 
-For example, see `_headers` and `_redirects` file in the `example` folder.
+See `_headers` and `_redirects` file in the `example` folder.
 
 SiteX is built from scratch to mimic Netlify's features. For detailed documents, see Netlify's [redirect document](https://www.netlify.com/docs/redirects/) and [header document](https://www.netlify.com/docs/headers-and-basic-auth/).
 
