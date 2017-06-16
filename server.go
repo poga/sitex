@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
-	"os"
 
 	"path/filepath"
+
+	"fmt"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -14,22 +15,37 @@ import (
 // Serve serves a directory with respect to _redirects config
 func Serve(workingDir string, addr string) error {
 	redirectConfig := filepath.Join(workingDir, "_redirects")
-	// if there's no redirect file, just serve static files
-	if _, err := os.Stat(redirectConfig); os.IsNotExist(err) {
-		http.Handle("/", http.FileServer(http.Dir(".")))
-		return http.ListenAndServe(addr, nil)
-	}
-
-	data, err := ioutil.ReadFile(redirectConfig)
-	if err != nil {
-		return err
-	}
+	headerConfig := filepath.Join(workingDir, "_headers")
 
 	router := httprouter.New()
-	// define route line by line
-	lines := bytes.Split(data, []byte("\n"))
+
+	var headerRouter *HeaderRouter
+	data, err := ioutil.ReadFile(headerConfig)
+	if err == nil {
+		headerRouter, err = loadHeaderConfig(workingDir, data)
+		if err != nil {
+			return err
+		}
+	}
+	data, err = ioutil.ReadFile(redirectConfig)
+	if err == nil {
+		loadRedirectConfig(workingDir, router, headerRouter, data)
+	}
+
+	router.NotFound = FileServer{workingDir, headerRouter}
+
+	fmt.Printf("Serving %s at %s\n", workingDir, addr)
+	return http.ListenAndServe(addr, router)
+}
+
+func loadHeaderConfig(workingDir string, config []byte) (*HeaderRouter, error) {
+	return NewHeaderRouter(config)
+}
+
+func loadRedirectConfig(workingDir string, router *httprouter.Router, headerRouter *HeaderRouter, config []byte) error {
+	lines := bytes.Split(config, []byte("\n"))
 	for _, line := range lines {
-		route, err := NewRoute(workingDir, line)
+		route, err := NewRoute(workingDir, line, headerRouter)
 		if err != nil {
 			return err
 		}
@@ -47,7 +63,5 @@ func Serve(workingDir string, addr string) error {
 			router.GET(route.Match, route.Handler)
 		}
 	}
-	router.NotFound = FallbackHandler{}
-
-	return http.ListenAndServe(addr, router)
+	return nil
 }

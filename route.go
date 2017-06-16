@@ -18,11 +18,12 @@ import (
 
 // Route correspond to a line in the _redirect config
 type Route struct {
-	Match      string
-	Queries    map[string]string
-	StatusCode int
-	To         string
-	wd         string
+	Match        string
+	Queries      map[string]string
+	StatusCode   int
+	To           string
+	wd           string
+	HeaderRouter *HeaderRouter
 }
 
 // CompileRedirectTo returns a string representing the destination of a request
@@ -64,6 +65,12 @@ func (route *Route) CompileRedirectTo(r *http.Request, ps httprouter.Params) str
 // Handler is a httprouter handler
 // the handler can be used directly on a httprouter. Check server.go for how
 func (route *Route) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	if route.HeaderRouter != nil {
+		handle, _, _ := route.HeaderRouter.Lookup("GET", r.URL.Path)
+		if handle != nil {
+			handle(w, r, ps)
+		}
+	}
 	// if there's queries to match
 	if len(route.Queries) > 0 {
 		queryMatched := true
@@ -127,7 +134,7 @@ func (route *Route) statusCodeHandler(w http.ResponseWriter, r *http.Request, ps
 }
 
 // NewRoute parse a redirect rule and returns a route
-func NewRoute(wd string, line []byte) (*Route, error) {
+func NewRoute(wd string, line []byte, headerRouter *HeaderRouter) (*Route, error) {
 	// remove all comments
 	comment := regexp.MustCompile("#.+")
 	rule := comment.ReplaceAll(line, []byte(""))
@@ -148,9 +155,9 @@ func NewRoute(wd string, line []byte) (*Route, error) {
 		return nil, fmt.Errorf("Invalid Redirect Rule: %s", line)
 	}
 
-	route := Route{Queries: make(map[string]string), wd: wd}
+	route := Route{Queries: make(map[string]string), wd: wd, HeaderRouter: headerRouter}
 
-	// = parse match
+	// parse match
 	matcher, fields := takeField(fields)
 	// if it's a splat route, add a variable name for httprouter
 	if strings.HasSuffix(matcher, "*") {
@@ -158,7 +165,7 @@ func NewRoute(wd string, line []byte) (*Route, error) {
 	}
 	route.Match = matcher
 
-	// = parse query params and to
+	// parse query params and to
 	// loop until we see and finished a redirect "to"
 	var f string
 	for {
