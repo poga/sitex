@@ -155,11 +155,11 @@ func TestParseExcessiveFields(t *testing.T) {
 }
 
 func TestRedirectWithHeaderRouter(t *testing.T) {
-	headerRouter, _ := NewHeaderRouter([]byte(`
+	headerRouters, _ := NewHeaderRouters([]byte(`
 /test/test.json
 	X-TEST: hello
 	`))
-	route, err := NewRoute(".", []byte("/test/test.json /foo/:id  301"), headerRouter)
+	route, err := NewRoute(".", []byte("/test/test.json /foo/:id  301"), headerRouters)
 	assert.NoError(t, err)
 	resp := testRequest(route, "GET", "/test/test.json")
 	assert.Equal(t, "hello", resp.Header().Get("X-TEST"))

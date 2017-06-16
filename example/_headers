@@ -1,2 +1,5 @@
 /test.json
   X-TEST-HEADER: SiteX
+
+/test-:id.json
+  X-TEST-HEADER: SiteXID

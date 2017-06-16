@@ -33,7 +33,7 @@ func TestFileServerWithHeaderRouter(t *testing.T) {
 /test.json
 	X-TEST: hello
 	`
-	router, _ := NewHeaderRouter([]byte(config))
+	router, _ := NewHeaderRouters([]byte(config))
 
 	handler := FileServer{"./example", router}
 

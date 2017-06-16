@@ -18,12 +18,12 @@ import (
 
 // Route correspond to a line in the _redirect config
 type Route struct {
-	Match        string
-	Queries      map[string]string
-	StatusCode   int
-	To           string
-	wd           string
-	HeaderRouter *HeaderRouter
+	Match         string
+	Queries       map[string]string
+	StatusCode    int
+	To            string
+	wd            string
+	HeaderRouters []HeaderRouter
 }
 
 // CompileRedirectTo returns a string representing the destination of a request
@@ -65,10 +65,12 @@ func (route *Route) CompileRedirectTo(r *http.Request, ps httprouter.Params) str
 // Handler is a httprouter handler
 // the handler can be used directly on a httprouter. Check server.go for how
 func (route *Route) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	if route.HeaderRouter != nil {
-		handle, _, _ := route.HeaderRouter.Lookup("GET", r.URL.Path)
-		if handle != nil {
-			handle(w, r, ps)
+	if len(route.HeaderRouters) > 0 {
+		for _, headerRouter := range route.HeaderRouters {
+			handle, _, _ := headerRouter.Lookup("GET", r.URL.Path)
+			if handle != nil {
+				handle(w, r, ps)
+			}
 		}
 	}
 	// if there's queries to match
@@ -134,7 +136,7 @@ func (route *Route) statusCodeHandler(w http.ResponseWriter, r *http.Request, ps
 }
 
 // NewRoute parse a redirect rule and returns a route
-func NewRoute(wd string, line []byte, headerRouter *HeaderRouter) (*Route, error) {
+func NewRoute(wd string, line []byte, headerRouters []HeaderRouter) (*Route, error) {
 	// remove all comments
 	comment := regexp.MustCompile("#.+")
 	rule := comment.ReplaceAll(line, []byte(""))
@@ -155,7 +157,7 @@ func NewRoute(wd string, line []byte, headerRouter *HeaderRouter) (*Route, error
 		return nil, fmt.Errorf("Invalid Redirect Rule: %s", line)
 	}
 
-	route := Route{Queries: make(map[string]string), wd: wd, HeaderRouter: headerRouter}
+	route := Route{Queries: make(map[string]string), wd: wd, HeaderRouters: headerRouters}
 
 	// parse match
 	matcher, fields := takeField(fields)

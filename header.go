@@ -26,17 +26,22 @@ type HeaderRouter struct {
 	*httprouter.Router
 }
 
-// NewHeaderRouter creates a HeaderRouter based on _header file
-func NewHeaderRouter(config []byte) (*HeaderRouter, error) {
-	router := HeaderRouter{httprouter.New()}
+// NewHeaderRouters creates an array of HeaderRouters based on _header file
+// where every path config is a router
+func NewHeaderRouters(config []byte) ([]HeaderRouter, error) {
+	routers := make([]HeaderRouter, 0)
 
 	lines := bytes.Split(config, []byte("\n"))
 
 	currentPath := &Path{}
-	paths := make([]*Path, 0)
+	router := HeaderRouter{httprouter.New()}
 	for _, line := range lines {
-		// if the whole line is a comment
+		// skip comment line
 		if commentLine.Match(line) {
+			continue
+		}
+		// skip empty line
+		if bytes.Compare(bytes.Trim(line, " \t"), []byte("")) == 0 {
 			continue
 		}
 
@@ -49,7 +54,9 @@ func NewHeaderRouter(config []byte) (*HeaderRouter, error) {
 					return nil, fmt.Errorf("Expect header but got a path: %s", line)
 				}
 				// the path is complete, push to paths
-				paths = append(paths, currentPath)
+				router.GET(currentPath.Path, currentPath.Handler)
+				routers = append(routers, router)
+				router = HeaderRouter{httprouter.New()}
 			}
 			// get a new path
 			p := parsePath(line)
@@ -77,19 +84,15 @@ func NewHeaderRouter(config []byte) (*HeaderRouter, error) {
 
 	if currentPath.Path != "" {
 		if len(currentPath.Headers) > 0 || len(currentPath.Auths) > 0 {
-			paths = append(paths, currentPath)
+			router.GET(currentPath.Path, currentPath.Handler)
+			routers = append(routers, router)
+			router = HeaderRouter{httprouter.New()}
 		} else {
 			return nil, fmt.Errorf("unclosed path")
 		}
 	}
 
-	for _, path := range paths {
-		// use GET because we don't really care about method
-		// All we care is performing lookup based on path
-		router.GET(path.Path, path.Handler)
-	}
-
-	return &router, nil
+	return routers, nil
 }
 
 // Path represent one URL and their additional headers

@@ -9,7 +9,7 @@ import (
 )
 
 func TestParseHeaderComment(t *testing.T) {
-	_, err := NewHeaderRouter([]byte("# just a comment"))
+	_, err := NewHeaderRouters([]byte("# just a comment"))
 	assert.NoError(t, err)
 }
 
@@ -18,13 +18,13 @@ func TestParseHeader(t *testing.T) {
 /foo
 	X-TEST-HEADER: bar
 	`
-	router, err := NewHeaderRouter([]byte(config))
+	routers, err := NewHeaderRouters([]byte(config))
 	assert.NoError(t, err)
-	handle, params, _ := router.Lookup("GET", "/foo")
+	handle, params, _ := routers[0].Lookup("GET", "/foo")
 	assert.NotNil(t, handle)
 	assert.Nil(t, params)
 
-	res := testHeader(router, "GET", "/foo")
+	res := testHeader(routers[0], "GET", "/foo")
 	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
@@ -33,7 +33,8 @@ func TestParseHeaderWithWhitespace(t *testing.T) {
 /foo
 	X-TEST-HEADER: bar baz
 	`
-	router, err := NewHeaderRouter([]byte(config))
+	routers, err := NewHeaderRouters([]byte(config))
+	router := routers[0]
 	assert.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/foo")
 	assert.NotNil(t, handle)
@@ -48,7 +49,8 @@ func TestParseHeaderIncludeColon(t *testing.T) {
 /foo
 	X-TEST-HEADER: bar:baz
 	`
-	router, err := NewHeaderRouter([]byte(config))
+	routers, err := NewHeaderRouters([]byte(config))
+	router := routers[0]
 	assert.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/foo")
 	assert.NotNil(t, handle)
@@ -63,7 +65,8 @@ func TestParseHeaderWithInlineComment(t *testing.T) {
 /foo # hi
 	X-TEST-HEADER: bar #hello
 	`
-	router, err := NewHeaderRouter([]byte(config))
+	routers, err := NewHeaderRouters([]byte(config))
+	router := routers[0]
 	assert.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/foo")
 	assert.NotNil(t, handle)
@@ -79,7 +82,8 @@ func TestMultiKeyHeader(t *testing.T) {
 	X-TEST-HEADER: bar
 	X-TEST-HEADER: baz
 	`
-	router, err := NewHeaderRouter([]byte(config))
+	routers, err := NewHeaderRouters([]byte(config))
+	router := routers[0]
 	assert.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/foo")
 	assert.NotNil(t, handle)
@@ -95,7 +99,8 @@ func TestMultiHeader(t *testing.T) {
 	X-TEST-HEADER: bar
 	X-TEST-HEADER2: baz
 	`
-	router, err := NewHeaderRouter([]byte(config))
+	routers, err := NewHeaderRouters([]byte(config))
+	router := routers[0]
 	assert.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/foo")
 	assert.NotNil(t, handle)
@@ -111,7 +116,8 @@ func TestPathMatchingSplat(t *testing.T) {
 /*
 	X-TEST-HEADER: bar
 	`
-	router, err := NewHeaderRouter([]byte(config))
+	routers, err := NewHeaderRouters([]byte(config))
+	router := routers[0]
 	assert.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/foo")
 	assert.NotNil(t, handle)
@@ -126,7 +132,8 @@ func TestPathMatchingSplatWithPrefix(t *testing.T) {
 /prefix/*
 	X-TEST-HEADER: bar
 	`
-	router, err := NewHeaderRouter([]byte(config))
+	routers, err := NewHeaderRouters([]byte(config))
+	router := routers[0]
 	assert.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/prefix/foo")
 	assert.NotNil(t, handle)
@@ -141,7 +148,8 @@ func TestPathMatchingPlaceholder(t *testing.T) {
 /:foo/bar
 	X-TEST-HEADER: bar
 	`
-	router, err := NewHeaderRouter([]byte(config))
+	routers, err := NewHeaderRouters([]byte(config))
+	router := routers[0]
 	assert.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/abc/bar")
 	assert.NotNil(t, handle)
@@ -158,18 +166,24 @@ func TestMatchMultiplePath(t *testing.T) {
 /baz
 	X-TEST: baz
 	`
-	router, err := NewHeaderRouter([]byte(config))
+	routers, err := NewHeaderRouters([]byte(config))
 	assert.NoError(t, err)
-	handle, params, _ := router.Lookup("GET", "/bar/abc")
+	handle, params, _ := routers[0].Lookup("GET", "/bar/abc")
 	assert.NotNil(t, handle)
 	assert.NotNil(t, params)
-	handle, params, _ = router.Lookup("GET", "/baz")
+	handle, params, _ = routers[1].Lookup("GET", "/bar/abc")
+	assert.Nil(t, handle)
+	assert.Nil(t, params)
+	handle, params, _ = routers[0].Lookup("GET", "/baz")
+	assert.Nil(t, handle)
+	assert.Nil(t, params)
+	handle, params, _ = routers[1].Lookup("GET", "/baz")
 	assert.NotNil(t, handle)
 	assert.Nil(t, params)
 
-	res := testHeader(router, "GET", "/bar/abc")
+	res := testHeader(routers[0], "GET", "/bar/abc")
 	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
-	res = testHeader(router, "GET", "/baz")
+	res = testHeader(routers[1], "GET", "/baz")
 	assert.Equal(t, "baz", res.Header().Get("X-TEST"))
 }
 
@@ -178,7 +192,8 @@ func TestPathBasicAuth(t *testing.T) {
 /login
 	Basic-Auth: foo:bar
 	`
-	router, err := NewHeaderRouter([]byte(config))
+	routers, err := NewHeaderRouters([]byte(config))
+	router := routers[0]
 	assert.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/login")
 	assert.NotNil(t, handle)
@@ -202,7 +217,8 @@ func TestPathMultipleBasicAuth(t *testing.T) {
 /login
 	Basic-Auth: foo:bar aaa:bbb
 	`
-	router, err := NewHeaderRouter([]byte(config))
+	routers, err := NewHeaderRouters([]byte(config))
+	router := routers[0]
 	assert.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/login")
 	assert.NotNil(t, handle)
@@ -231,7 +247,8 @@ func TestPathBasicAuthAndHeader(t *testing.T) {
 	Basic-Auth: foo:bar
 	X-TEST-HEADER: hello
 	`
-	router, err := NewHeaderRouter([]byte(config))
+	routers, err := NewHeaderRouters([]byte(config))
+	router := routers[0]
 	assert.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/login")
 	assert.NotNil(t, handle)
@@ -253,7 +270,7 @@ func TestPathBasicAuthAndHeader(t *testing.T) {
 	assert.Equal(t, 401, res.Code)
 }
 
-func testHeader(router *HeaderRouter, method string, path string) *httptest.ResponseRecorder {
+func testHeader(router HeaderRouter, method string, path string) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest(method, path, nil)
 	router.ServeHTTP(rec, req)
@@ -261,7 +278,7 @@ func testHeader(router *HeaderRouter, method string, path string) *httptest.Resp
 	return rec
 }
 
-func testHeaderAuth(router *HeaderRouter, method string, path string, username string, password string) *httptest.ResponseRecorder {
+func testHeaderAuth(router HeaderRouter, method string, path string, username string, password string) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest(method, path, nil)
 	req.SetBasicAuth(username, password)

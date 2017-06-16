@@ -37,8 +37,14 @@ func TestExampleServer(t *testing.T) {
 	resp, err = sendReq("GET", "http://localhost:9069/bar?id=2")
 	assert.NoError(t, err)
 	assert.Equal(t, 301, resp.StatusCode)
-	assert.Equal(t, "", resp.Header.Get("X-TEST-HEADER"))
 	assert.Equal(t, "/test-2.json", resp.Header.Get("Location"))
+
+	resp, err = sendReq("GET", "http://localhost:9069/test-2.json")
+	assert.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode)
+	assert.Equal(t, "SiteXID", resp.Header.Get("X-TEST-HEADER"))
+	body, err = ioutil.ReadAll(resp.Body)
+	assert.Equal(t, "{\"foo\": \"bar2\"}\n", string(body))
 
 	resp, err = sendReq("GET", "http://localhost:9069/google")
 	assert.NoError(t, err)
