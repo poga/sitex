@@ -21,6 +21,10 @@ func (s FileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			handle, _, _ := headerRouter.Lookup("GET", path)
 			if handle != nil {
 				handle(w, r, nil)
+				// don't server file if basic auth is not authenticated
+				if w.Header().Get("WWW-Authenticate") != "" {
+					return
+				}
 			}
 		}
 	}
@@ -29,6 +33,7 @@ func (s FileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
 		return
 	}
+
 	path = filepath.Join(s.WorkingDir, path[1:])
 	http.ServeFile(w, r, path)
 }

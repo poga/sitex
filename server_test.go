@@ -51,6 +51,24 @@ func TestExampleServer(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 200, resp.StatusCode)
 	assert.Equal(t, "", resp.Header.Get("X-TEST-HEADER"))
+
+	resp, err = sendReq("GET", "http://localhost:9069/secret.json")
+	assert.Equal(t, "", resp.Header.Get("Basic-Auth"))
+	assert.Equal(t, 401, resp.StatusCode)
+	body, err = ioutil.ReadAll(resp.Body)
+	assert.Equal(t, "Unauthorized.\n", string(body))
+
+	resp, err = sendReqAuth("GET", "http://localhost:9069/secret.json", "user", "pass")
+	assert.Equal(t, "", resp.Header.Get("Basic-Auth"))
+	assert.Equal(t, 200, resp.StatusCode)
+	body, err = ioutil.ReadAll(resp.Body)
+	assert.Equal(t, "{\n  \"secret\": true\n}", string(body))
+
+	resp, err = sendReqAuth("GET", "http://localhost:9069/secret.json", "foo", "pass")
+	assert.Equal(t, "", resp.Header.Get("Basic-Auth"))
+	assert.Equal(t, 401, resp.StatusCode)
+	body, err = ioutil.ReadAll(resp.Body)
+	assert.Equal(t, "Unauthorized.\n", string(body))
 }
 
 func sendReq(method string, url string) (*http.Response, error) {
@@ -60,5 +78,16 @@ func sendReq(method string, url string) (*http.Response, error) {
 			return http.ErrUseLastResponse
 		},
 	}
+	return client.Do(req)
+}
+
+func sendReqAuth(method string, url string, user string, pass string) (*http.Response, error) {
+	req, _ := http.NewRequest(method, url, nil)
+	client := http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	req.SetBasicAuth(user, pass)
 	return client.Do(req)
 }
