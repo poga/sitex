@@ -14,52 +14,48 @@ import (
 
 // Server is an instance of SiteX server
 type Server struct {
-	router   *httprouter.Router
-	listener net.Listener
+	router *httprouter.Router
 }
 
 // Start starts the server
-func (s *Server) Start() {
-	http.Serve(s.listener, s.router)
+func (s *Server) Start(listener net.Listener) {
+	http.Serve(listener, s.router)
 }
 
-// NewServer looks for `_headers` and `_redirects` files in the workingDir, parse rules, and return a Server
-func NewServer(workingDir string, addr string) (*Server, error) {
-	redirectConfig := filepath.Join(workingDir, "_redirects")
-	headerConfig := filepath.Join(workingDir, "_headers")
+// NewServer creates a new server serving given directory.
+// It follows the rules defined in `_redirects` and `_headers` files.
+func NewServer(directory string) (*Server, error) {
+	redirectConfig := filepath.Join(directory, "_redirects")
+	headerConfig := filepath.Join(directory, "_headers")
 
 	router := httprouter.New()
 
 	var headerRouters []HeaderRouter
 	data, err := ioutil.ReadFile(headerConfig)
 	if err == nil {
-		headerRouters, err = loadHeaderConfig(workingDir, data)
+		headerRouters, err = loadHeaderConfig(directory, data)
 		if err != nil {
 			return nil, err
 		}
 	}
 	data, err = ioutil.ReadFile(redirectConfig)
 	if err == nil {
-		loadRedirectConfig(workingDir, router, headerRouters, data)
+		loadRedirectConfig(directory, router, headerRouters, data)
 	}
 
-	router.NotFound = FileServer{workingDir, headerRouters}
+	router.NotFound = FileServer{directory, headerRouters}
 
-	listener, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-	return &Server{router, listener}, nil
+	return &Server{router}, nil
 }
 
-func loadHeaderConfig(workingDir string, config []byte) ([]HeaderRouter, error) {
+func loadHeaderConfig(directory string, config []byte) ([]HeaderRouter, error) {
 	return NewHeaderRouters(config)
 }
 
-func loadRedirectConfig(workingDir string, router *httprouter.Router, headerRouters []HeaderRouter, config []byte) error {
+func loadRedirectConfig(directory string, router *httprouter.Router, headerRouters []HeaderRouter, config []byte) error {
 	lines := bytes.Split(config, []byte("\n"))
 	for _, line := range lines {
-		route, err := NewRoute(workingDir, line, headerRouters)
+		route, err := NewRoute(directory, line, headerRouters)
 		if err != nil {
 			return err
 		}

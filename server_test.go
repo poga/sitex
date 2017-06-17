@@ -6,13 +6,17 @@ import (
 
 	"io/ioutil"
 
+	"net"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestExampleServer(t *testing.T) {
-	server, err := NewServer("./example", ":9069")
+	server, err := NewServer("./example")
 	assert.NoError(t, err)
-	go server.Start()
+	listener, err := net.Listen("tcp", ":9069")
+	assert.NoError(t, err)
+	go server.Start(listener)
 
 	resp, err := sendReq("GET", "http://localhost:9069/test.json")
 	assert.NoError(t, err)

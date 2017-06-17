@@ -26,14 +26,30 @@ type HeaderRouter struct {
 	*httprouter.Router
 }
 
-// NewHeaderRouters creates an array of HeaderRouters based on _header file
-// where every path config is a router
+// Handle checks if the router should process the given request.
+// It's a noop if the router should not process the request.
+// Returns error if the response is finalized and we shouldn't return anything more.
+func (router HeaderRouter) Handle(w http.ResponseWriter, r *http.Request, ps httprouter.Params) error {
+	handle, _, _ := router.Lookup("GET", r.URL.Path)
+	if handle != nil {
+		handle(w, r, ps)
+
+		// if there's an authentication error. stop the handler chain
+		if w.Header().Get("WWW-Authenticate") != "" {
+			return fmt.Errorf("Unauthorized")
+		}
+	}
+	return nil
+}
+
+// NewHeaderRouters returns an list of HeaderRouters from given rules.
+// Every path will creates a HeaderRouter
 func NewHeaderRouters(config []byte) ([]HeaderRouter, error) {
 	routers := make([]HeaderRouter, 0)
 
 	lines := bytes.Split(config, []byte("\n"))
 
-	currentPath := &Path{}
+	currentPath := &path{}
 	router := HeaderRouter{httprouter.New()}
 	for _, line := range lines {
 		// skip comment line
@@ -95,21 +111,19 @@ func NewHeaderRouters(config []byte) ([]HeaderRouter, error) {
 	return routers, nil
 }
 
-// Path represent one URL and their additional headers
-type Path struct {
+type path struct {
 	Path    string
 	Headers map[string][]string
-	Auths   []Auth
+	Auths   []auth
 }
 
-// Auth is a username/password pair which can be used to authentication with http basic auth
-type Auth struct {
+type auth struct {
 	Username string
 	Password string
 }
 
 // Handler is a httprouter handler which is used for adding headers to response
-func (path *Path) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (path *path) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// if basic auth is required
 	if len(path.Auths) > 0 {
 		user, pass, ok := r.BasicAuth()
@@ -134,7 +148,7 @@ func (path *Path) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.
 	}
 }
 
-func parsePath(line []byte) *Path {
+func parsePath(line []byte) *path {
 	// remove inline comment
 	line = comment.ReplaceAll(line, []byte(""))
 	line = bytes.Trim(line, " \t")
@@ -147,10 +161,10 @@ func parsePath(line []byte) *Path {
 		line = []byte(string(line) + "splat") // lazy way to do clone + concat
 	}
 
-	return &Path{Path: string(line), Headers: make(map[string][]string), Auths: make([]Auth, 0)}
+	return &path{Path: string(line), Headers: make(map[string][]string), Auths: make([]auth, 0)}
 }
 
-func parseHeader(line []byte, currentPath *Path) (*Path, error) {
+func parseHeader(line []byte, currentPath *path) (*path, error) {
 	// remove inline comment
 	line = comment.ReplaceAll(line, []byte(""))
 	line = bytes.Trim(line, " \t")
@@ -172,7 +186,7 @@ func parseHeader(line []byte, currentPath *Path) (*Path, error) {
 			p := strings.Split(pair, ":")
 			username := p[0]
 			password := p[1]
-			currentPath.Auths = append(currentPath.Auths, Auth{username, password})
+			currentPath.Auths = append(currentPath.Auths, auth{username, password})
 		}
 		return currentPath, nil
 	}

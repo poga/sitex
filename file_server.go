@@ -6,7 +6,8 @@ import (
 	"strings"
 )
 
-// FileServer works similar to http.FileServer, but without directory index
+// FileServer serves a directory to the web using HTTP.
+// It works like http.FileServer, but without directory index (returns 404 when accessing a directory).
 type FileServer struct {
 	WorkingDir    string
 	HeaderRouters []HeaderRouter
@@ -18,13 +19,9 @@ func (s FileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if len(s.HeaderRouters) > 0 {
 		for _, headerRouter := range s.HeaderRouters {
-			handle, _, _ := headerRouter.Lookup("GET", path)
-			if handle != nil {
-				handle(w, r, nil)
-				// don't server file if basic auth is not authenticated
-				if w.Header().Get("WWW-Authenticate") != "" {
-					return
-				}
+			err := headerRouter.Handle(w, r, nil)
+			if err != nil {
+				return
 			}
 		}
 	}

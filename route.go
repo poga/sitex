@@ -67,12 +67,13 @@ func (route *Route) CompileRedirectTo(r *http.Request, ps httprouter.Params) str
 func (route *Route) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if len(route.HeaderRouters) > 0 {
 		for _, headerRouter := range route.HeaderRouters {
-			handle, _, _ := headerRouter.Lookup("GET", r.URL.Path)
-			if handle != nil {
-				handle(w, r, ps)
+			err := headerRouter.Handle(w, r, ps)
+			if err != nil {
+				return
 			}
 		}
 	}
+
 	// if there's queries to match
 	if len(route.Queries) > 0 {
 		queryMatched := true
@@ -94,7 +95,9 @@ func (route *Route) Handler(w http.ResponseWriter, r *http.Request, ps httproute
 	return
 }
 
-// IsProxy checks if the route is a proxy route (which redirect to a external http endpoint
+// IsProxy returns true if the route is a proxy route.
+// A proxy route has a complete URL in its "to" part.
+// The route should act as a reverse proxy if it's a proxy route.
 func (route *Route) IsProxy() bool {
 	return strings.HasPrefix(route.To, "http")
 }
@@ -135,7 +138,7 @@ func (route *Route) statusCodeHandler(w http.ResponseWriter, r *http.Request, ps
 	http.ServeFile(w, r, filepath.Join(route.wd, route.CompileRedirectTo(r, ps)))
 }
 
-// NewRoute parse a redirect rule and returns a route
+// NewRoute returns a route based on given redirect rule.
 func NewRoute(wd string, line []byte, headerRouters []HeaderRouter) (*Route, error) {
 	// remove all comments
 	comment := regexp.MustCompile("#.+")
