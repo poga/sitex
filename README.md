@@ -52,7 +52,7 @@ Now you got a web server which:
 * `http://localhost:8080/foo` will redirect to `/test.json`
 * `http://localhost:8080/bar?id=2` will render `/test-2.json`
 
-### CLI options
+## CLI options
 
 * dir: the directory you want to server. **Default: current working directory**.
 * port: port to listen. **Default: 8080**.
@@ -62,6 +62,10 @@ Now you got a web server which:
 See `_headers` and `_redirects` file in the `example` folder.
 
 SiteX is built from scratch to mimic Netlify's features. For detailed documents, see Netlify's [redirect document](https://www.netlify.com/docs/redirects/) and [header document](https://www.netlify.com/docs/headers-and-basic-auth/).
+
+## Library
+
+SiteX can be used as a library. Getting started by checking `server_test.go`.
 
 ## Contribute
 
