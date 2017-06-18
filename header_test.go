@@ -5,12 +5,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseHeaderComment(t *testing.T) {
 	_, err := NewHeaderRouters([]byte("# just a comment"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestParseHeader(t *testing.T) {
@@ -19,13 +19,13 @@ func TestParseHeader(t *testing.T) {
 	X-TEST-HEADER: bar
 	`
 	routers, err := NewHeaderRouters([]byte(config))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	handle, params, _ := routers[0].Lookup("GET", "/foo")
-	assert.NotNil(t, handle)
-	assert.Nil(t, params)
+	require.NotNil(t, handle)
+	require.Nil(t, params)
 
 	res := testHeader(routers[0], "GET", "/foo")
-	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
+	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
 func TestParseHeaderWithWhitespace(t *testing.T) {
@@ -35,13 +35,13 @@ func TestParseHeaderWithWhitespace(t *testing.T) {
 	`
 	routers, err := NewHeaderRouters([]byte(config))
 	router := routers[0]
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/foo")
-	assert.NotNil(t, handle)
-	assert.Nil(t, params)
+	require.NotNil(t, handle)
+	require.Nil(t, params)
 
 	res := testHeader(router, "GET", "/foo")
-	assert.Equal(t, "bar baz", res.Header().Get("X-TEST-HEADER"))
+	require.Equal(t, "bar baz", res.Header().Get("X-TEST-HEADER"))
 }
 
 func TestParseHeaderIncludeColon(t *testing.T) {
@@ -51,13 +51,13 @@ func TestParseHeaderIncludeColon(t *testing.T) {
 	`
 	routers, err := NewHeaderRouters([]byte(config))
 	router := routers[0]
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/foo")
-	assert.NotNil(t, handle)
-	assert.Nil(t, params)
+	require.NotNil(t, handle)
+	require.Nil(t, params)
 
 	res := testHeader(router, "GET", "/foo")
-	assert.Equal(t, "bar:baz", res.Header().Get("X-TEST-HEADER"))
+	require.Equal(t, "bar:baz", res.Header().Get("X-TEST-HEADER"))
 }
 
 func TestParseHeaderWithInlineComment(t *testing.T) {
@@ -67,13 +67,13 @@ func TestParseHeaderWithInlineComment(t *testing.T) {
 	`
 	routers, err := NewHeaderRouters([]byte(config))
 	router := routers[0]
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/foo")
-	assert.NotNil(t, handle)
-	assert.Nil(t, params)
+	require.NotNil(t, handle)
+	require.Nil(t, params)
 
 	res := testHeader(router, "GET", "/foo")
-	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
+	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
 func TestMultiKeyHeader(t *testing.T) {
@@ -84,13 +84,13 @@ func TestMultiKeyHeader(t *testing.T) {
 	`
 	routers, err := NewHeaderRouters([]byte(config))
 	router := routers[0]
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/foo")
-	assert.NotNil(t, handle)
-	assert.Nil(t, params)
+	require.NotNil(t, handle)
+	require.Nil(t, params)
 
 	res := testHeader(router, "GET", "/foo")
-	assert.Equal(t, "bar, baz", res.Header().Get("X-TEST-HEADER"))
+	require.Equal(t, "bar, baz", res.Header().Get("X-TEST-HEADER"))
 }
 
 func TestMultiHeader(t *testing.T) {
@@ -101,14 +101,14 @@ func TestMultiHeader(t *testing.T) {
 	`
 	routers, err := NewHeaderRouters([]byte(config))
 	router := routers[0]
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/foo")
-	assert.NotNil(t, handle)
-	assert.Nil(t, params)
+	require.NotNil(t, handle)
+	require.Nil(t, params)
 
 	res := testHeader(router, "GET", "/foo")
-	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
-	assert.Equal(t, "baz", res.Header().Get("X-TEST-HEADER2"))
+	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
+	require.Equal(t, "baz", res.Header().Get("X-TEST-HEADER2"))
 }
 
 func TestPathMatchingSplat(t *testing.T) {
@@ -118,13 +118,13 @@ func TestPathMatchingSplat(t *testing.T) {
 	`
 	routers, err := NewHeaderRouters([]byte(config))
 	router := routers[0]
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/foo")
-	assert.NotNil(t, handle)
-	assert.NotNil(t, params)
+	require.NotNil(t, handle)
+	require.NotNil(t, params)
 
 	res := testHeader(router, "GET", "/foo")
-	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
+	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
 func TestPathMatchingSplatWithPrefix(t *testing.T) {
@@ -134,13 +134,13 @@ func TestPathMatchingSplatWithPrefix(t *testing.T) {
 	`
 	routers, err := NewHeaderRouters([]byte(config))
 	router := routers[0]
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/prefix/foo")
-	assert.NotNil(t, handle)
-	assert.NotNil(t, params)
+	require.NotNil(t, handle)
+	require.NotNil(t, params)
 
 	res := testHeader(router, "GET", "/prefix/foo")
-	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
+	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
 func TestPathMatchingPlaceholder(t *testing.T) {
@@ -150,13 +150,13 @@ func TestPathMatchingPlaceholder(t *testing.T) {
 	`
 	routers, err := NewHeaderRouters([]byte(config))
 	router := routers[0]
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/abc/bar")
-	assert.NotNil(t, handle)
-	assert.NotNil(t, params)
+	require.NotNil(t, handle)
+	require.NotNil(t, params)
 
 	res := testHeader(router, "GET", "/abc/bar")
-	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
+	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
 func TestMatchMultiplePath(t *testing.T) {
@@ -167,24 +167,24 @@ func TestMatchMultiplePath(t *testing.T) {
 	X-TEST: baz
 	`
 	routers, err := NewHeaderRouters([]byte(config))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	handle, params, _ := routers[0].Lookup("GET", "/bar/abc")
-	assert.NotNil(t, handle)
-	assert.NotNil(t, params)
+	require.NotNil(t, handle)
+	require.NotNil(t, params)
 	handle, params, _ = routers[1].Lookup("GET", "/bar/abc")
-	assert.Nil(t, handle)
-	assert.Nil(t, params)
+	require.Nil(t, handle)
+	require.Nil(t, params)
 	handle, params, _ = routers[0].Lookup("GET", "/baz")
-	assert.Nil(t, handle)
-	assert.Nil(t, params)
+	require.Nil(t, handle)
+	require.Nil(t, params)
 	handle, params, _ = routers[1].Lookup("GET", "/baz")
-	assert.NotNil(t, handle)
-	assert.Nil(t, params)
+	require.NotNil(t, handle)
+	require.Nil(t, params)
 
 	res := testHeader(routers[0], "GET", "/bar/abc")
-	assert.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
+	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 	res = testHeader(routers[1], "GET", "/baz")
-	assert.Equal(t, "baz", res.Header().Get("X-TEST"))
+	require.Equal(t, "baz", res.Header().Get("X-TEST"))
 }
 
 func TestPathBasicAuth(t *testing.T) {
@@ -194,22 +194,22 @@ func TestPathBasicAuth(t *testing.T) {
 	`
 	routers, err := NewHeaderRouters([]byte(config))
 	router := routers[0]
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/login")
-	assert.NotNil(t, handle)
-	assert.Nil(t, params)
+	require.NotNil(t, handle)
+	require.Nil(t, params)
 
 	res := testHeader(router, "GET", "/login")
-	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
-	assert.Equal(t, 401, res.Code)
+	require.Equal(t, "", res.Header().Get("Basic-Auth"))
+	require.Equal(t, 401, res.Code)
 
 	res = testHeaderAuth(router, "GET", "/login", "foo", "bar")
-	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
-	assert.Equal(t, 200, res.Code)
+	require.Equal(t, "", res.Header().Get("Basic-Auth"))
+	require.Equal(t, 200, res.Code)
 
 	res = testHeaderAuth(router, "GET", "/login", "foo", "baz")
-	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
-	assert.Equal(t, 401, res.Code)
+	require.Equal(t, "", res.Header().Get("Basic-Auth"))
+	require.Equal(t, 401, res.Code)
 }
 
 func TestPathMultipleBasicAuth(t *testing.T) {
@@ -219,26 +219,26 @@ func TestPathMultipleBasicAuth(t *testing.T) {
 	`
 	routers, err := NewHeaderRouters([]byte(config))
 	router := routers[0]
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/login")
-	assert.NotNil(t, handle)
-	assert.Nil(t, params)
+	require.NotNil(t, handle)
+	require.Nil(t, params)
 
 	res := testHeader(router, "GET", "/login")
-	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
-	assert.Equal(t, 401, res.Code)
+	require.Equal(t, "", res.Header().Get("Basic-Auth"))
+	require.Equal(t, 401, res.Code)
 
 	res = testHeaderAuth(router, "GET", "/login", "foo", "bar")
-	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
-	assert.Equal(t, 200, res.Code)
+	require.Equal(t, "", res.Header().Get("Basic-Auth"))
+	require.Equal(t, 200, res.Code)
 
 	res = testHeaderAuth(router, "GET", "/login", "aaa", "bbb")
-	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
-	assert.Equal(t, 200, res.Code)
+	require.Equal(t, "", res.Header().Get("Basic-Auth"))
+	require.Equal(t, 200, res.Code)
 
 	res = testHeaderAuth(router, "GET", "/login", "foo", "baz")
-	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
-	assert.Equal(t, 401, res.Code)
+	require.Equal(t, "", res.Header().Get("Basic-Auth"))
+	require.Equal(t, 401, res.Code)
 }
 
 func TestPathBasicAuthAndHeader(t *testing.T) {
@@ -249,25 +249,25 @@ func TestPathBasicAuthAndHeader(t *testing.T) {
 	`
 	routers, err := NewHeaderRouters([]byte(config))
 	router := routers[0]
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	handle, params, _ := router.Lookup("GET", "/login")
-	assert.NotNil(t, handle)
-	assert.Nil(t, params)
+	require.NotNil(t, handle)
+	require.Nil(t, params)
 
 	res := testHeader(router, "GET", "/login")
-	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
-	assert.Equal(t, "hello", res.Header().Get("X-TEST-HEADER"))
-	assert.Equal(t, 401, res.Code)
+	require.Equal(t, "", res.Header().Get("Basic-Auth"))
+	require.Equal(t, "hello", res.Header().Get("X-TEST-HEADER"))
+	require.Equal(t, 401, res.Code)
 
 	res = testHeaderAuth(router, "GET", "/login", "foo", "bar")
-	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
-	assert.Equal(t, "hello", res.Header().Get("X-TEST-HEADER"))
-	assert.Equal(t, 200, res.Code)
+	require.Equal(t, "", res.Header().Get("Basic-Auth"))
+	require.Equal(t, "hello", res.Header().Get("X-TEST-HEADER"))
+	require.Equal(t, 200, res.Code)
 
 	res = testHeaderAuth(router, "GET", "/login", "foo", "baz")
-	assert.Equal(t, "", res.Header().Get("Basic-Auth"))
-	assert.Equal(t, "hello", res.Header().Get("X-TEST-HEADER"))
-	assert.Equal(t, 401, res.Code)
+	require.Equal(t, "", res.Header().Get("Basic-Auth"))
+	require.Equal(t, "hello", res.Header().Get("X-TEST-HEADER"))
+	require.Equal(t, 401, res.Code)
 }
 
 func testHeader(router HeaderRouter, method string, path string) *httptest.ResponseRecorder {

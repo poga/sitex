@@ -40,7 +40,10 @@ func NewServer(directory string) (*Server, error) {
 	}
 	data, err = ioutil.ReadFile(redirectConfig)
 	if err == nil {
-		loadRedirectConfig(directory, router, headerRouters, data)
+		err := loadRedirectConfig(directory, router, headerRouters, data)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	router.NotFound = FileServer{directory, headerRouters}

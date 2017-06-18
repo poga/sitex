@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFileServer(t *testing.T) {
@@ -14,18 +14,18 @@ func TestFileServer(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
 	handler.ServeHTTP(rec, req)
-	assert.Equal(t, 404, rec.Code)
+	require.Equal(t, 404, rec.Code)
 
 	rec = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/test.json", nil)
 	handler.ServeHTTP(rec, req)
-	assert.Equal(t, 200, rec.Code)
-	assert.Equal(t, "{\"foo\": \"bar\"}\n", rec.Body.String())
+	require.Equal(t, 200, rec.Code)
+	require.Equal(t, "{\"foo\": \"bar\"}\n", rec.Body.String())
 
 	rec = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/foo", nil)
 	handler.ServeHTTP(rec, req)
-	assert.Equal(t, 404, rec.Code)
+	require.Equal(t, 404, rec.Code)
 }
 
 func TestFileServerWithHeaderRouter(t *testing.T) {
@@ -40,19 +40,19 @@ func TestFileServerWithHeaderRouter(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
 	handler.ServeHTTP(rec, req)
-	assert.Equal(t, 404, rec.Code)
-	assert.Equal(t, "", rec.Header().Get("X-TEST"))
+	require.Equal(t, 404, rec.Code)
+	require.Equal(t, "", rec.Header().Get("X-TEST"))
 
 	rec = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/test.json", nil)
 	handler.ServeHTTP(rec, req)
-	assert.Equal(t, 200, rec.Code)
-	assert.Equal(t, "{\"foo\": \"bar\"}\n", rec.Body.String())
-	assert.Equal(t, "hello", rec.Header().Get("X-TEST"))
+	require.Equal(t, 200, rec.Code)
+	require.Equal(t, "{\"foo\": \"bar\"}\n", rec.Body.String())
+	require.Equal(t, "hello", rec.Header().Get("X-TEST"))
 
 	rec = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/foo", nil)
 	handler.ServeHTTP(rec, req)
-	assert.Equal(t, 404, rec.Code)
-	assert.Equal(t, "", rec.Header().Get("X-TEST"))
+	require.Equal(t, 404, rec.Code)
+	require.Equal(t, "", rec.Header().Get("X-TEST"))
 }

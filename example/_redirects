@@ -9,3 +9,6 @@
 
 # proxy
 /google https://google.com 200
+
+# shadowing
+/shadowed /test.json 200!
