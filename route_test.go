@@ -12,19 +12,19 @@ import (
 )
 
 func TestParseComment(t *testing.T) {
-	route, err := NewRoute(".", []byte("# This is a comment"), nil)
+	route, err := NewRoute(".", []byte("# This is a comment"))
 	require.NoError(t, err)
 	require.Nil(t, route)
 }
 
 func TestParseEmptyLine(t *testing.T) {
-	route, err := NewRoute(".", []byte("    "), nil)
+	route, err := NewRoute(".", []byte("    "))
 	require.NoError(t, err)
 	require.Nil(t, route)
 }
 
 func TestParseBasicRule(t *testing.T) {
-	route, err := NewRoute(".", []byte("/ /foo"), nil)
+	route, err := NewRoute(".", []byte("/ /foo"))
 	require.NoError(t, err)
 	require.Equal(t, 301, route.StatusCode)
 	require.Equal(t, "/", route.Match)
@@ -36,7 +36,7 @@ func TestParseBasicRule(t *testing.T) {
 }
 
 func TestParseInlineComment(t *testing.T) {
-	route, err := NewRoute(".", []byte("/ /foo #hi"), nil)
+	route, err := NewRoute(".", []byte("/ /foo #hi"))
 	require.NoError(t, err)
 	require.Equal(t, 301, route.StatusCode)
 	require.Equal(t, "/", route.Match)
@@ -48,7 +48,7 @@ func TestParseInlineComment(t *testing.T) {
 }
 
 func TestParseStatusCode(t *testing.T) {
-	route, err := NewRoute(".", []byte("/ /test/test.json 200"), nil)
+	route, err := NewRoute(".", []byte("/ /test/test.json 200"))
 	require.NoError(t, err)
 	require.Equal(t, 200, route.StatusCode)
 	require.Equal(t, "/", route.Match)
@@ -60,11 +60,12 @@ func TestParseStatusCode(t *testing.T) {
 }
 
 func TestParseShadowingStatusCode(t *testing.T) {
-	route, err := NewRoute(".", []byte("/ /test/test.json 200!"), nil)
+	route, err := NewRoute(".", []byte("/ /test/test.json 200!"))
 	require.NoError(t, err)
 	require.Equal(t, 200, route.StatusCode)
 	require.Equal(t, "/", route.Match)
 	require.Equal(t, "/test/test.json", route.To)
+	require.True(t, route.Shadowing)
 
 	resp := testRequest(route, "GET", "/")
 	require.Equal(t, 200, resp.Code)
@@ -72,12 +73,12 @@ func TestParseShadowingStatusCode(t *testing.T) {
 }
 
 func TestParseInvalidStatusCode(t *testing.T) {
-	_, err := NewRoute(".", []byte("/ /foo bar"), nil)
+	_, err := NewRoute(".", []byte("/ /foo bar"))
 	require.Error(t, err)
 }
 
 func TestParsePlaceholderRule(t *testing.T) {
-	route, err := NewRoute(".", []byte("/news/:year /foo/:year"), nil)
+	route, err := NewRoute(".", []byte("/news/:year /foo/:year"))
 	require.NoError(t, err)
 	require.Equal(t, 301, route.StatusCode)
 	require.Equal(t, "/news/:year", route.Match)
@@ -89,7 +90,7 @@ func TestParsePlaceholderRule(t *testing.T) {
 }
 
 func TestParsePlaceholderRuleInline(t *testing.T) {
-	route, err := NewRoute(".", []byte("/news/year-:year /foo/:year"), nil)
+	route, err := NewRoute(".", []byte("/news/year-:year /foo/:year"))
 	require.NoError(t, err)
 	require.Equal(t, 301, route.StatusCode)
 	require.Equal(t, "/news/year-:year", route.Match)
@@ -101,7 +102,7 @@ func TestParsePlaceholderRuleInline(t *testing.T) {
 }
 
 func TestParseSplatRule(t *testing.T) {
-	route, err := NewRoute(".", []byte("/news/* /:splat"), nil)
+	route, err := NewRoute(".", []byte("/news/* /:splat"))
 	require.NoError(t, err)
 	require.Equal(t, 301, route.StatusCode)
 	require.Equal(t, "/news/*splat", route.Match)
@@ -118,7 +119,7 @@ func TestParseSplatRule(t *testing.T) {
 }
 
 func TestParseQueryParams(t *testing.T) {
-	route, err := NewRoute(".", []byte("/test/test.json id=:id  /foo/:id  301"), nil)
+	route, err := NewRoute(".", []byte("/test/test.json id=:id  /foo/:id  301"))
 	require.NoError(t, err)
 	require.Equal(t, 301, route.StatusCode)
 	require.Equal(t, "/test/test.json", route.Match)
@@ -137,7 +138,7 @@ func TestParseQueryParams(t *testing.T) {
 func TestParseProxy(t *testing.T) {
 	ts := mockServer()
 	defer ts.Close()
-	route, err := NewRoute(".", []byte(fmt.Sprintf("/  %s 200", ts.URL)), nil)
+	route, err := NewRoute(".", []byte(fmt.Sprintf("/  %s 200", ts.URL)))
 	require.NoError(t, err)
 	require.Equal(t, 200, route.StatusCode)
 	require.Equal(t, "/", route.Match)
@@ -151,7 +152,7 @@ func TestParseProxy(t *testing.T) {
 func TestParseProxyPOST(t *testing.T) {
 	ts := mockServer()
 	defer ts.Close()
-	route, err := NewRoute(".", []byte(fmt.Sprintf("/ %s  200", ts.URL)), nil)
+	route, err := NewRoute(".", []byte(fmt.Sprintf("/ %s  200", ts.URL)))
 	require.NoError(t, err)
 	require.Equal(t, 200, route.StatusCode)
 	require.Equal(t, "/", route.Match)
@@ -162,22 +163,8 @@ func TestParseProxyPOST(t *testing.T) {
 	require.Equal(t, "METHOD: POST", resp.Body.String())
 }
 func TestParseExcessiveFields(t *testing.T) {
-	_, err := NewRoute(".", []byte("/store id=:id  /blog/:id  301 foo"), nil)
+	_, err := NewRoute(".", []byte("/store id=:id  /blog/:id  301 foo"))
 	require.Error(t, err)
-}
-
-func TestRedirectWithHeaderRouter(t *testing.T) {
-	headerRouters, _ := NewHeaderRouters([]byte(`
-/test/test.json
-	X-TEST: hello
-	`))
-	route, err := NewRoute(".", []byte("/test/test.json /foo/:id  301"), headerRouters)
-	require.NoError(t, err)
-	resp := testRequest(route, "GET", "/test/test.json")
-	require.Equal(t, "hello", resp.Header().Get("X-TEST"))
-
-	resp = testRequest(route, "GET", "/foo")
-	require.Equal(t, "", resp.Header().Get("X-TEST"))
 }
 
 func testRequest(route *Route, method string, path string) *httptest.ResponseRecorder {

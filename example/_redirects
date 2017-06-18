@@ -8,7 +8,10 @@
 /bar id=:id /test-:id.json
 
 # proxy
-/google https://google.com 200
+/google http://localhost:9090/proxy 200
 
 # shadowing
-/shadowed /test.json 200!
+/shadowed.json /test.json 200!
+
+# nonShadowing
+/notShadowed.json /test.json 200

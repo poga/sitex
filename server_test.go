@@ -8,10 +8,13 @@ import (
 
 	"io/ioutil"
 
+	"io"
 	"net"
 )
 
 func TestExampleServer(t *testing.T) {
+	mockProxy()
+
 	server, err := NewServer("./example")
 	require.NoError(t, err)
 	listener, err := net.Listen("tcp", ":9069")
@@ -32,6 +35,10 @@ func TestExampleServer(t *testing.T) {
 	require.Equal(t, "", resp.Header.Get("X-TEST-HEADER"))
 	body, err = ioutil.ReadAll(resp.Body)
 	require.Equal(t, "{\"foo\": \"bar\"}\n", string(body))
+
+	resp, err = sendReq("GET", "http://localhost:9069/notFound.json")
+	require.NoError(t, err)
+	require.Equal(t, 404, resp.StatusCode)
 
 	resp, err = sendReq("GET", "http://localhost:9069/foo")
 	require.NoError(t, err)
@@ -55,6 +62,8 @@ func TestExampleServer(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 200, resp.StatusCode)
 	require.Equal(t, "", resp.Header.Get("X-TEST-HEADER"))
+	body, err = ioutil.ReadAll(resp.Body)
+	require.Equal(t, "proxy!", string(body))
 
 	resp, err = sendReq("GET", "http://localhost:9069/secret.json")
 	require.Equal(t, "", resp.Header.Get("Basic-Auth"))
@@ -73,6 +82,20 @@ func TestExampleServer(t *testing.T) {
 	require.Equal(t, 401, resp.StatusCode)
 	body, err = ioutil.ReadAll(resp.Body)
 	require.Equal(t, "Unauthorized.\n", string(body))
+
+	resp, err = sendReq("GET", "http://localhost:9069/shadowed.json")
+	require.NoError(t, err)
+	require.Equal(t, 200, resp.StatusCode)
+	require.Equal(t, "", resp.Header.Get("X-TEST-HEADER"))
+	body, err = ioutil.ReadAll(resp.Body)
+	require.Equal(t, "{\"foo\": \"bar\"}\n", string(body))
+
+	resp, err = sendReq("GET", "http://localhost:9069/notShadowed.json")
+	require.NoError(t, err)
+	require.Equal(t, 200, resp.StatusCode)
+	require.Equal(t, "", resp.Header.Get("X-TEST-HEADER"))
+	body, err = ioutil.ReadAll(resp.Body)
+	require.Equal(t, "{\n  \"shadowed\": false\n}", string(body))
 }
 
 func sendReq(method string, url string) (*http.Response, error) {
@@ -94,4 +117,12 @@ func sendReqAuth(method string, url string, user string, pass string) (*http.Res
 	}
 	req.SetBasicAuth(user, pass)
 	return client.Do(req)
+}
+
+func mockProxy() {
+	http.HandleFunc("/proxy", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "proxy!")
+	})
+	go http.ListenAndServe(":9090", nil)
+
 }

@@ -14,7 +14,7 @@ import (
 
 // Server is an instance of SiteX server
 type Server struct {
-	router *httprouter.Router
+	router MainRouter
 }
 
 // Start starts the server
@@ -28,53 +28,53 @@ func NewServer(directory string) (*Server, error) {
 	redirectConfig := filepath.Join(directory, "_redirects")
 	headerConfig := filepath.Join(directory, "_headers")
 
-	router := httprouter.New()
-
 	var headerRouters []HeaderRouter
 	data, err := ioutil.ReadFile(headerConfig)
 	if err == nil {
-		headerRouters, err = loadHeaderConfig(directory, data)
+		headerRouters, err = loadHeaderRouters(directory, data)
 		if err != nil {
 			return nil, err
 		}
 	}
 	data, err = ioutil.ReadFile(redirectConfig)
+	shadowingRouter := httprouter.New()
+	nonShadowingRouter := httprouter.New()
 	if err == nil {
-		err := loadRedirectConfig(directory, router, headerRouters, data)
+		redirectRoutes, err := loadRedirectRoutes(directory, data)
 		if err != nil {
 			return nil, err
 		}
+		for _, route := range redirectRoutes {
+			if route.Shadowing {
+				route.HookTo(shadowingRouter)
+			} else {
+				route.HookTo(nonShadowingRouter)
+			}
+		}
 	}
+	fileServer := FileServer{directory}
+	mainRouter := MainRouter{headerRouters, shadowingRouter, nonShadowingRouter, fileServer}
 
-	router.NotFound = FileServer{directory, headerRouters}
-
-	return &Server{router}, nil
+	return &Server{mainRouter}, nil
 }
 
-func loadHeaderConfig(directory string, config []byte) ([]HeaderRouter, error) {
+func loadHeaderRouters(directory string, config []byte) ([]HeaderRouter, error) {
 	return NewHeaderRouters(config)
 }
 
-func loadRedirectConfig(directory string, router *httprouter.Router, headerRouters []HeaderRouter, config []byte) error {
+func loadRedirectRoutes(directory string, config []byte) ([]*Route, error) {
+	routes := make([]*Route, 0)
 	lines := bytes.Split(config, []byte("\n"))
 	for _, line := range lines {
-		route, err := NewRoute(directory, line, headerRouters)
+		route, err := NewRoute(directory, line)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		// comment line
 		if route == nil {
 			continue
 		}
-		if route.IsProxy() {
-			// if it's a proxy, we just define the route on all method
-			methods := []string{"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"}
-			for _, method := range methods {
-				router.Handle(method, route.Match, route.Handler)
-			}
-		} else {
-			router.GET(route.Match, route.Handler)
-		}
+		routes = append(routes, route)
 	}
-	return nil
+	return routes, nil
 }

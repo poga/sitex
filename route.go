@@ -18,12 +18,12 @@ import (
 
 // Route correspond to a line in the _redirect config
 type Route struct {
-	Match         string
-	Queries       map[string]string
-	StatusCode    int
-	To            string
-	wd            string
-	HeaderRouters []HeaderRouter
+	Match      string
+	Queries    map[string]string
+	StatusCode int
+	To         string
+	wd         string
+	Shadowing  bool
 }
 
 // CompileRedirectTo returns a string representing the destination of a request
@@ -63,17 +63,7 @@ func (route *Route) CompileRedirectTo(r *http.Request, ps httprouter.Params) str
 }
 
 // Handler is a httprouter handler
-// the handler can be used directly on a httprouter. Check server.go for how
 func (route *Route) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	if len(route.HeaderRouters) > 0 {
-		for _, headerRouter := range route.HeaderRouters {
-			err := headerRouter.Handle(w, r, ps)
-			if err != nil {
-				return
-			}
-		}
-	}
-
 	// if there's queries to match
 	if len(route.Queries) > 0 {
 		queryMatched := true
@@ -100,6 +90,18 @@ func (route *Route) Handler(w http.ResponseWriter, r *http.Request, ps httproute
 // The route should act as a reverse proxy if it's a proxy route.
 func (route *Route) IsProxy() bool {
 	return strings.HasPrefix(route.To, "http")
+}
+
+// HookTo hook the route to a router
+func (route *Route) HookTo(router *httprouter.Router) {
+	if route.IsProxy() {
+		// hook to all methods if it's a proxy
+		for _, method := range METHODS {
+			router.Handle(method, route.Match, route.Handler)
+		}
+	} else {
+		router.GET(route.Match, route.Handler)
+	}
 }
 
 func (route *Route) statusCodeHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -139,7 +141,7 @@ func (route *Route) statusCodeHandler(w http.ResponseWriter, r *http.Request, ps
 }
 
 // NewRoute returns a route based on given redirect rule.
-func NewRoute(wd string, line []byte, headerRouters []HeaderRouter) (*Route, error) {
+func NewRoute(wd string, line []byte) (*Route, error) {
 	// remove all comments
 	comment := regexp.MustCompile("#.+")
 	rule := comment.ReplaceAll(line, []byte(""))
@@ -160,7 +162,7 @@ func NewRoute(wd string, line []byte, headerRouters []HeaderRouter) (*Route, err
 		return nil, fmt.Errorf("Invalid Redirect Rule: %s", line)
 	}
 
-	route := Route{Queries: make(map[string]string), wd: wd, HeaderRouters: headerRouters}
+	route := Route{Queries: make(map[string]string), wd: wd}
 
 	// parse match
 	matcher, fields := takeField(fields)
@@ -188,6 +190,10 @@ func NewRoute(wd string, line []byte, headerRouters []HeaderRouter) (*Route, err
 	var c string
 	if len(fields) > 0 {
 		c, fields = takeField(fields)
+		if strings.HasSuffix(c, "!") {
+			route.Shadowing = true
+			c = c[0 : len(c)-1]
+		}
 		code, err := strconv.Atoi(c)
 		if err != nil {
 			return nil, fmt.Errorf("Invalid Status Code: %s", line)
