@@ -48,11 +48,11 @@ func TestParseInlineComment(t *testing.T) {
 }
 
 func TestParseStatusCode(t *testing.T) {
-	route, err := NewRoute(".", []byte("/ /test/test.json 200"))
+	route, err := NewRoute(".", []byte("/ /example/test.json 200"))
 	require.NoError(t, err)
 	require.Equal(t, 200, route.StatusCode)
 	require.Equal(t, "/", route.Match)
-	require.Equal(t, "/test/test.json", route.To)
+	require.Equal(t, "/example/test.json", route.To)
 
 	resp := testRequest(route, "GET", "/")
 	require.Equal(t, 200, resp.Code)
@@ -60,11 +60,11 @@ func TestParseStatusCode(t *testing.T) {
 }
 
 func TestParseShadowingStatusCode(t *testing.T) {
-	route, err := NewRoute(".", []byte("/ /test/test.json 200!"))
+	route, err := NewRoute(".", []byte("/ /example/test.json 200!"))
 	require.NoError(t, err)
 	require.Equal(t, 200, route.StatusCode)
 	require.Equal(t, "/", route.Match)
-	require.Equal(t, "/test/test.json", route.To)
+	require.Equal(t, "/example/test.json", route.To)
 	require.True(t, route.Shadowing)
 
 	resp := testRequest(route, "GET", "/")
@@ -119,18 +119,18 @@ func TestParseSplatRule(t *testing.T) {
 }
 
 func TestParseQueryParams(t *testing.T) {
-	route, err := NewRoute(".", []byte("/test/test.json id=:id  /foo/:id  301"))
+	route, err := NewRoute(".", []byte("/example/test.json id=:id  /foo/:id  301"))
 	require.NoError(t, err)
 	require.Equal(t, 301, route.StatusCode)
-	require.Equal(t, "/test/test.json", route.Match)
+	require.Equal(t, "/example/test.json", route.Match)
 	require.Equal(t, "/foo/:id", route.To)
 	require.Equal(t, "id", route.Queries["id"])
 
-	resp := testRequest(route, "GET", "/test/test.json")
+	resp := testRequest(route, "GET", "/example/test.json")
 	require.Equal(t, 200, resp.Code)
 	require.Equal(t, "{\"foo\": \"bar\"}\n", resp.Body.String())
 
-	resp = testRequest(route, "GET", "/test/test.json?id=1")
+	resp = testRequest(route, "GET", "/example/test.json?id=1")
 	require.Equal(t, 301, resp.Code)
 	require.Equal(t, "/foo/1", resp.HeaderMap["Location"][0])
 }
