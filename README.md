@@ -59,6 +59,8 @@ Now you got a web server which:
 
 ## Rules
 
+**Note**: Custom header is a paid-only feature on Netlify.
+
 See `_headers` and `_redirects` file in the `example` folder.
 
 SiteX is built from scratch to mimic Netlify's features. For detailed documents, see Netlify's [redirect document](https://www.netlify.com/docs/redirects/) and [header document](https://www.netlify.com/docs/headers-and-basic-auth/).
