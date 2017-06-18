@@ -84,6 +84,11 @@ func NewHeaderRouters(config []byte) ([]HeaderRouter, error) {
 			continue
 		}
 
+		// are we waiting for header?
+		if currentPath.Path == "" {
+			return nil, fmt.Errorf("Dangling header without path: %s', line")
+		}
+
 		// header shoud have leading space
 		if !leadingSpace.Match(line) {
 			return nil, fmt.Errorf("Incorrect indent: %s", line)

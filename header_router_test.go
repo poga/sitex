@@ -28,6 +28,78 @@ func TestParseHeader(t *testing.T) {
 	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
+func TestParseIncompleteHeader(t *testing.T) {
+	config := `
+/foo
+	`
+	routers, err := NewHeaderRouters([]byte(config))
+	require.Error(t, err)
+	require.Nil(t, routers)
+}
+
+func TestParseIncorrectIndentedHeaderPath(t *testing.T) {
+	config := `
+	/foo
+	X-TEST-HEADER: bar
+	`
+	routers, err := NewHeaderRouters([]byte(config))
+	require.Error(t, err)
+	require.Nil(t, routers)
+}
+
+func TestParseIncorrectIndentedHeaderHeader(t *testing.T) {
+	config := `
+/foo
+X-TEST-HEADER: bar
+	`
+	routers, err := NewHeaderRouters([]byte(config))
+	require.Error(t, err)
+	require.Nil(t, routers)
+}
+
+func TestParseUnclosedPath(t *testing.T) {
+	config := `
+/foo
+	X-TEST-HEADER: bar
+/bar
+	`
+	routers, err := NewHeaderRouters([]byte(config))
+	require.Error(t, err)
+	require.Nil(t, routers)
+}
+
+func TestParseHeaderWithEmptyLine(t *testing.T) {
+	config := `
+/foo
+
+	X-TEST-HEADER: bar
+	`
+	routers, err := NewHeaderRouters([]byte(config))
+	require.NoError(t, err)
+	handle, params, _ := routers[0].Lookup("GET", "/foo")
+	require.NotNil(t, handle)
+	require.Nil(t, params)
+
+	res := testHeader(routers[0], "GET", "/foo")
+	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
+}
+
+func TestParseHeaderWithEmptyLine2(t *testing.T) {
+	config := `
+
+/foo
+	X-TEST-HEADER: bar
+	`
+	routers, err := NewHeaderRouters([]byte(config))
+	require.NoError(t, err)
+	handle, params, _ := routers[0].Lookup("GET", "/foo")
+	require.NotNil(t, handle)
+	require.Nil(t, params)
+
+	res := testHeader(routers[0], "GET", "/foo")
+	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
+}
+
 func TestParseHeaderWithWhitespace(t *testing.T) {
 	config := `
 /foo
@@ -212,6 +284,16 @@ func TestPathBasicAuth(t *testing.T) {
 	require.Equal(t, 401, res.Code)
 }
 
+func TestPathDuplicatedBasicAuth(t *testing.T) {
+	config := `
+/login
+	Basic-Auth: foo:bar
+	Basic-Auth: foo:baz
+	`
+	routers, err := NewHeaderRouters([]byte(config))
+	require.Error(t, err)
+	require.Nil(t, routers)
+}
 func TestPathMultipleBasicAuth(t *testing.T) {
 	config := `
 /login
