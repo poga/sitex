@@ -94,7 +94,7 @@ func NewHeaders(config []byte) ([]middleware, error) {
 
 		// are we waiting for header?
 		if currentPath.Path == "" {
-			return nil, fmt.Errorf("Dangling header without path: %s', line")
+			return nil, fmt.Errorf("Dangling header without path: %s", line)
 		}
 
 		// header shoud have leading space
