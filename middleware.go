@@ -7,5 +7,5 @@ type middleware interface {
 	Match(*http.Request) bool
 	// Handle process the request, send response,
 	// then returns whether the middleware chain should go on, and error
-	Handle(w http.ResponseWriter, r *http.Request) (bool, error)
+	Handle(w http.ResponseWriter, r *http.Request) bool
 }

@@ -34,9 +34,9 @@ func (header *Header) Match(r *http.Request) bool {
 // Handle checks if the router should process the given request.
 // It's a noop if the router should not process the request.
 // Returns error if the response is finalized and we shouldn't return anything more.
-func (header *Header) Handle(w http.ResponseWriter, r *http.Request) (bool, error) {
+func (header *Header) Handle(w http.ResponseWriter, r *http.Request) bool {
 	if !header.Match(r) {
-		return true, nil
+		return true
 	}
 	handle, params, _ := header.router.Lookup("GET", r.URL.Path)
 	if handle != nil {
@@ -44,10 +44,10 @@ func (header *Header) Handle(w http.ResponseWriter, r *http.Request) (bool, erro
 
 		// if there's an authentication error. stop the handler chain
 		if w.Header().Get("WWW-Authenticate") != "" {
-			return false, nil
+			return false
 		}
 	}
-	return true, nil
+	return true
 }
 
 // NewHeaders returns an list of HeaderRouters from given rules.

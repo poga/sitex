@@ -18,9 +18,9 @@ func (s FileServer) Match(r *http.Request) bool {
 }
 
 // ServeHTTP Serving static files without director index
-func (s FileServer) Handle(w http.ResponseWriter, r *http.Request) (bool, error) {
+func (s FileServer) Handle(w http.ResponseWriter, r *http.Request) bool {
 	if !s.Match(r) {
-		return true, nil
+		return true
 	}
 
 	path := r.URL.Path
@@ -28,7 +28,7 @@ func (s FileServer) Handle(w http.ResponseWriter, r *http.Request) (bool, error)
 	path = filepath.Join(s.WorkingDir, path[1:])
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		http.ServeFile(w, r, path)
-		return false, nil
+		return false
 	}
-	return true, nil
+	return true
 }

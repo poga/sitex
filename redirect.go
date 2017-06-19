@@ -51,13 +51,13 @@ func (redirect *Redirect) Match(r *http.Request) bool {
 }
 
 // Handle handle the request and stop middleware chain if necessary
-func (redirect *Redirect) Handle(w http.ResponseWriter, r *http.Request) (bool, error) {
+func (redirect *Redirect) Handle(w http.ResponseWriter, r *http.Request) bool {
 	if !redirect.Match(r) {
-		return true, nil
+		return true
 	}
 	handle, params, _ := redirect.router.Lookup(r.Method, r.URL.Path)
 	handle(w, r, params)
-	return false, nil
+	return false
 }
 
 // IsProxy returns true if the route is a proxy route.
