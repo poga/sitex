@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 
 	"net"
-
-	"github.com/julienschmidt/httprouter"
 )
 
 // Server is an instance of SiteX server
@@ -25,10 +23,12 @@ func (s *Server) Start(listener net.Listener) {
 // NewServer creates a new server serving given directory.
 // It follows the rules defined in `_redirects` and `_headers` files.
 func NewServer(directory string) (*Server, error) {
+	var err error
+
 	redirectConfig := filepath.Join(directory, "_redirects")
 	headerConfig := filepath.Join(directory, "_headers")
 
-	var headerRouters []HeaderRouter
+	var headerRouters []Header
 	data, err := ioutil.ReadFile(headerConfig)
 	if err == nil {
 		headerRouters, err = loadHeaderRouters(directory, data)
@@ -36,45 +36,44 @@ func NewServer(directory string) (*Server, error) {
 			return nil, err
 		}
 	}
+
+	var shadowingRedirects []*Redirect
+	var nonShadowingRedirects []*Redirect
 	data, err = ioutil.ReadFile(redirectConfig)
-	shadowingRouter := httprouter.New()
-	nonShadowingRouter := httprouter.New()
 	if err == nil {
-		redirectRoutes, err := loadRedirectRoutes(directory, data)
+		shadowingRedirects, nonShadowingRedirects, err = loadRedirects(directory, data)
 		if err != nil {
 			return nil, err
 		}
-		for _, route := range redirectRoutes {
-			if route.Shadowing {
-				route.HookTo(shadowingRouter)
-			} else {
-				route.HookTo(nonShadowingRouter)
-			}
-		}
 	}
 	fileServer := FileServer{directory}
-	mainRouter := MainRouter{headerRouters, shadowingRouter, nonShadowingRouter, fileServer}
+	mainRouter := MainRouter{headerRouters, shadowingRedirects, nonShadowingRedirects, fileServer}
 
 	return &Server{mainRouter}, nil
 }
 
-func loadHeaderRouters(directory string, config []byte) ([]HeaderRouter, error) {
-	return NewHeaderRouters(config)
+func loadHeaderRouters(directory string, config []byte) ([]Header, error) {
+	return NewHeaders(config)
 }
 
-func loadRedirectRoutes(directory string, config []byte) ([]*Route, error) {
-	routes := make([]*Route, 0)
+func loadRedirects(directory string, config []byte) ([]*Redirect, []*Redirect, error) {
+	shadowingRedirects := make([]*Redirect, 0)
+	nonShadowingRedirects := make([]*Redirect, 0)
 	lines := bytes.Split(config, []byte("\n"))
 	for _, line := range lines {
-		route, err := NewRoute(directory, line)
+		redirect, err := NewRedirect(directory, line)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		// comment line
-		if route == nil {
+		if redirect == nil {
 			continue
 		}
-		routes = append(routes, route)
+		if redirect.Shadowing {
+			shadowingRedirects = append(shadowingRedirects, redirect)
+		} else {
+			nonShadowingRedirects = append(nonShadowingRedirects, redirect)
+		}
 	}
-	return routes, nil
+	return shadowingRedirects, nonShadowingRedirects, nil
 }

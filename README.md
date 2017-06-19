@@ -65,10 +65,6 @@ See `_headers` and `_redirects` file in the `example` folder.
 
 For detailed documents, see Netlify's [redirect document](https://www.netlify.com/docs/redirects/) and [header document](https://www.netlify.com/docs/headers-and-basic-auth/).
 
-## Library
-
-SiteX can be used as a library. Getting started by checking `server_test.go`.
-
 ## Contribute
 
 Feel free to open an issue if you find difference between SiteX and Netlify.

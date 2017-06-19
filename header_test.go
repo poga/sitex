@@ -9,7 +9,7 @@ import (
 )
 
 func TestParseHeaderComment(t *testing.T) {
-	_, err := NewHeaderRouters([]byte("# just a comment"))
+	_, err := NewHeaders([]byte("# just a comment"))
 	require.NoError(t, err)
 }
 
@@ -18,13 +18,12 @@ func TestParseHeader(t *testing.T) {
 /foo
 	X-TEST-HEADER: bar
 	`
-	routers, err := NewHeaderRouters([]byte(config))
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := routers[0].Lookup("GET", "/foo")
-	require.NotNil(t, handle)
-	require.Nil(t, params)
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(routers[0], "GET", "/foo")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
@@ -32,7 +31,7 @@ func TestParseIncompleteHeader(t *testing.T) {
 	config := `
 /foo
 	`
-	routers, err := NewHeaderRouters([]byte(config))
+	routers, err := NewHeaders([]byte(config))
 	require.Error(t, err)
 	require.Nil(t, routers)
 }
@@ -42,7 +41,7 @@ func TestParseIncorrectIndentedHeaderPath(t *testing.T) {
 	/foo
 	X-TEST-HEADER: bar
 	`
-	routers, err := NewHeaderRouters([]byte(config))
+	routers, err := NewHeaders([]byte(config))
 	require.Error(t, err)
 	require.Nil(t, routers)
 }
@@ -52,7 +51,7 @@ func TestParseIncorrectIndentedHeaderHeader(t *testing.T) {
 /foo
 X-TEST-HEADER: bar
 	`
-	routers, err := NewHeaderRouters([]byte(config))
+	routers, err := NewHeaders([]byte(config))
 	require.Error(t, err)
 	require.Nil(t, routers)
 }
@@ -63,7 +62,7 @@ func TestParseUnclosedPath(t *testing.T) {
 	X-TEST-HEADER: bar
 /bar
 	`
-	routers, err := NewHeaderRouters([]byte(config))
+	routers, err := NewHeaders([]byte(config))
 	require.Error(t, err)
 	require.Nil(t, routers)
 }
@@ -74,13 +73,12 @@ func TestParseHeaderWithEmptyLine(t *testing.T) {
 
 	X-TEST-HEADER: bar
 	`
-	routers, err := NewHeaderRouters([]byte(config))
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := routers[0].Lookup("GET", "/foo")
-	require.NotNil(t, handle)
-	require.Nil(t, params)
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(routers[0], "GET", "/foo")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
@@ -90,13 +88,12 @@ func TestParseHeaderWithEmptyLine2(t *testing.T) {
 /foo
 	X-TEST-HEADER: bar
 	`
-	routers, err := NewHeaderRouters([]byte(config))
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := routers[0].Lookup("GET", "/foo")
-	require.NotNil(t, handle)
-	require.Nil(t, params)
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(routers[0], "GET", "/foo")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
@@ -105,14 +102,12 @@ func TestParseHeaderWithWhitespace(t *testing.T) {
 /foo
 	X-TEST-HEADER: bar baz
 	`
-	routers, err := NewHeaderRouters([]byte(config))
-	router := routers[0]
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := router.Lookup("GET", "/foo")
-	require.NotNil(t, handle)
-	require.Nil(t, params)
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(router, "GET", "/foo")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "bar baz", res.Header().Get("X-TEST-HEADER"))
 }
 
@@ -121,14 +116,12 @@ func TestParseHeaderIncludeColon(t *testing.T) {
 /foo
 	X-TEST-HEADER: bar:baz
 	`
-	routers, err := NewHeaderRouters([]byte(config))
-	router := routers[0]
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := router.Lookup("GET", "/foo")
-	require.NotNil(t, handle)
-	require.Nil(t, params)
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(router, "GET", "/foo")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "bar:baz", res.Header().Get("X-TEST-HEADER"))
 }
 
@@ -137,14 +130,12 @@ func TestParseHeaderWithInlineComment(t *testing.T) {
 /foo # hi
 	X-TEST-HEADER: bar #hello
 	`
-	routers, err := NewHeaderRouters([]byte(config))
-	router := routers[0]
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := router.Lookup("GET", "/foo")
-	require.NotNil(t, handle)
-	require.Nil(t, params)
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(router, "GET", "/foo")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
@@ -154,14 +145,12 @@ func TestMultiKeyHeader(t *testing.T) {
 	X-TEST-HEADER: bar
 	X-TEST-HEADER: baz
 	`
-	routers, err := NewHeaderRouters([]byte(config))
-	router := routers[0]
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := router.Lookup("GET", "/foo")
-	require.NotNil(t, handle)
-	require.Nil(t, params)
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(router, "GET", "/foo")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "bar, baz", res.Header().Get("X-TEST-HEADER"))
 }
 
@@ -171,14 +160,12 @@ func TestMultiHeader(t *testing.T) {
 	X-TEST-HEADER: bar
 	X-TEST-HEADER2: baz
 	`
-	routers, err := NewHeaderRouters([]byte(config))
-	router := routers[0]
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := router.Lookup("GET", "/foo")
-	require.NotNil(t, handle)
-	require.Nil(t, params)
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(router, "GET", "/foo")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 	require.Equal(t, "baz", res.Header().Get("X-TEST-HEADER2"))
 }
@@ -188,14 +175,12 @@ func TestPathMatchingSplat(t *testing.T) {
 /*
 	X-TEST-HEADER: bar
 	`
-	routers, err := NewHeaderRouters([]byte(config))
-	router := routers[0]
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := router.Lookup("GET", "/foo")
-	require.NotNil(t, handle)
-	require.NotNil(t, params)
+	req, _ := http.NewRequest("GET", "/foo", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(router, "GET", "/foo")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
@@ -204,14 +189,12 @@ func TestPathMatchingSplatWithPrefix(t *testing.T) {
 /prefix/*
 	X-TEST-HEADER: bar
 	`
-	routers, err := NewHeaderRouters([]byte(config))
-	router := routers[0]
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := router.Lookup("GET", "/prefix/foo")
-	require.NotNil(t, handle)
-	require.NotNil(t, params)
+	req, _ := http.NewRequest("GET", "/prefix/foo", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(router, "GET", "/prefix/foo")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
@@ -220,14 +203,12 @@ func TestPathMatchingPlaceholder(t *testing.T) {
 /:foo/bar
 	X-TEST-HEADER: bar
 	`
-	routers, err := NewHeaderRouters([]byte(config))
-	router := routers[0]
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := router.Lookup("GET", "/abc/bar")
-	require.NotNil(t, handle)
-	require.NotNil(t, params)
+	req, _ := http.NewRequest("GET", "/abc/bar", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(router, "GET", "/abc/bar")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
 }
 
@@ -238,24 +219,22 @@ func TestMatchMultiplePath(t *testing.T) {
 /baz
 	X-TEST: baz
 	`
-	routers, err := NewHeaderRouters([]byte(config))
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := routers[0].Lookup("GET", "/bar/abc")
-	require.NotNil(t, handle)
-	require.NotNil(t, params)
-	handle, params, _ = routers[1].Lookup("GET", "/bar/abc")
-	require.Nil(t, handle)
-	require.Nil(t, params)
-	handle, params, _ = routers[0].Lookup("GET", "/baz")
-	require.Nil(t, handle)
-	require.Nil(t, params)
-	handle, params, _ = routers[1].Lookup("GET", "/baz")
-	require.NotNil(t, handle)
-	require.Nil(t, params)
+	req, _ := http.NewRequest("GET", "/bar/abc", nil)
+	require.True(t, headers[0].Match(req))
+	req, _ = http.NewRequest("GET", "/bar/abc", nil)
+	require.False(t, headers[1].Match(req))
+	req, _ = http.NewRequest("GET", "/baz", nil)
+	require.False(t, headers[0].Match(req))
+	req, _ = http.NewRequest("GET", "/baz", nil)
+	require.True(t, headers[1].Match(req))
 
-	res := testHeader(routers[0], "GET", "/bar/abc")
+	req, _ = http.NewRequest("GET", "/bar/abc", nil)
+	res := testHeader(headers[0], req)
 	require.Equal(t, "bar", res.Header().Get("X-TEST-HEADER"))
-	res = testHeader(routers[1], "GET", "/baz")
+	req, _ = http.NewRequest("GET", "/baz", nil)
+	res = testHeader(headers[1], req)
 	require.Equal(t, "baz", res.Header().Get("X-TEST"))
 }
 
@@ -264,22 +243,20 @@ func TestPathBasicAuth(t *testing.T) {
 /login
 	Basic-Auth: foo:bar
 	`
-	routers, err := NewHeaderRouters([]byte(config))
-	router := routers[0]
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := router.Lookup("GET", "/login")
-	require.NotNil(t, handle)
-	require.Nil(t, params)
+	req, _ := http.NewRequest("GET", "/login", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(router, "GET", "/login")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "", res.Header().Get("Basic-Auth"))
 	require.Equal(t, 401, res.Code)
 
-	res = testHeaderAuth(router, "GET", "/login", "foo", "bar")
+	res = testHeaderAuth(headers[0], req, "foo", "bar")
 	require.Equal(t, "", res.Header().Get("Basic-Auth"))
 	require.Equal(t, 200, res.Code)
 
-	res = testHeaderAuth(router, "GET", "/login", "foo", "baz")
+	res = testHeaderAuth(headers[0], req, "foo", "baz")
 	require.Equal(t, "", res.Header().Get("Basic-Auth"))
 	require.Equal(t, 401, res.Code)
 }
@@ -290,7 +267,7 @@ func TestPathDuplicatedBasicAuth(t *testing.T) {
 	Basic-Auth: foo:bar
 	Basic-Auth: foo:baz
 	`
-	routers, err := NewHeaderRouters([]byte(config))
+	routers, err := NewHeaders([]byte(config))
 	require.Error(t, err)
 	require.Nil(t, routers)
 }
@@ -299,26 +276,24 @@ func TestPathMultipleBasicAuth(t *testing.T) {
 /login
 	Basic-Auth: foo:bar aaa:bbb
 	`
-	routers, err := NewHeaderRouters([]byte(config))
-	router := routers[0]
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := router.Lookup("GET", "/login")
-	require.NotNil(t, handle)
-	require.Nil(t, params)
+	req, _ := http.NewRequest("GET", "/login", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(router, "GET", "/login")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "", res.Header().Get("Basic-Auth"))
 	require.Equal(t, 401, res.Code)
 
-	res = testHeaderAuth(router, "GET", "/login", "foo", "bar")
+	res = testHeaderAuth(headers[0], req, "foo", "bar")
 	require.Equal(t, "", res.Header().Get("Basic-Auth"))
 	require.Equal(t, 200, res.Code)
 
-	res = testHeaderAuth(router, "GET", "/login", "aaa", "bbb")
+	res = testHeaderAuth(headers[0], req, "aaa", "bbb")
 	require.Equal(t, "", res.Header().Get("Basic-Auth"))
 	require.Equal(t, 200, res.Code)
 
-	res = testHeaderAuth(router, "GET", "/login", "foo", "baz")
+	res = testHeaderAuth(headers[0], req, "foo", "baz")
 	require.Equal(t, "", res.Header().Get("Basic-Auth"))
 	require.Equal(t, 401, res.Code)
 }
@@ -329,42 +304,38 @@ func TestPathBasicAuthAndHeader(t *testing.T) {
 	Basic-Auth: foo:bar
 	X-TEST-HEADER: hello
 	`
-	routers, err := NewHeaderRouters([]byte(config))
-	router := routers[0]
+	headers, err := NewHeaders([]byte(config))
 	require.NoError(t, err)
-	handle, params, _ := router.Lookup("GET", "/login")
-	require.NotNil(t, handle)
-	require.Nil(t, params)
+	req, _ := http.NewRequest("GET", "/login", nil)
+	require.True(t, headers[0].Match(req))
 
-	res := testHeader(router, "GET", "/login")
+	res := testHeader(headers[0], req)
 	require.Equal(t, "", res.Header().Get("Basic-Auth"))
 	require.Equal(t, "hello", res.Header().Get("X-TEST-HEADER"))
 	require.Equal(t, 401, res.Code)
 
-	res = testHeaderAuth(router, "GET", "/login", "foo", "bar")
+	res = testHeaderAuth(headers[0], req, "foo", "bar")
 	require.Equal(t, "", res.Header().Get("Basic-Auth"))
 	require.Equal(t, "hello", res.Header().Get("X-TEST-HEADER"))
 	require.Equal(t, 200, res.Code)
 
-	res = testHeaderAuth(router, "GET", "/login", "foo", "baz")
+	res = testHeaderAuth(headers[0], req, "foo", "baz")
 	require.Equal(t, "", res.Header().Get("Basic-Auth"))
 	require.Equal(t, "hello", res.Header().Get("X-TEST-HEADER"))
 	require.Equal(t, 401, res.Code)
 }
 
-func testHeader(router HeaderRouter, method string, path string) *httptest.ResponseRecorder {
+func testHeader(header Header, req *http.Request) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest(method, path, nil)
-	router.ServeHTTP(rec, req)
+	header.Handle(rec, req)
 
 	return rec
 }
 
-func testHeaderAuth(router HeaderRouter, method string, path string, username string, password string) *httptest.ResponseRecorder {
+func testHeaderAuth(header Header, req *http.Request, username string, password string) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest(method, path, nil)
 	req.SetBasicAuth(username, password)
-	router.ServeHTTP(rec, req)
+	header.Handle(rec, req)
 
 	return rec
 }

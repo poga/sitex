@@ -16,20 +16,61 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// Route correspond to a line in the _redirect config
-type Route struct {
-	Match      string
+// Redirect correspond to a line in the _redirect config
+type Redirect struct {
+	From       string
 	Queries    map[string]string
 	StatusCode int
 	To         string
 	wd         string
 	Shadowing  bool
+	router     *httprouter.Router
 }
 
-// CompileRedirectTo returns a string representing the destination of a request
+func (redirect *Redirect) Match(r *http.Request) bool {
+	handle, _, _ := redirect.router.Lookup(r.Method, r.URL.Path)
+	if handle == nil {
+		return false
+	}
+
+	// check if query params matched the request
+	if len(redirect.Queries) > 0 {
+		queryMatched := true
+		for _, q := range redirect.Queries {
+			if r.URL.Query().Get(q) == "" {
+				queryMatched = false
+				break
+			}
+		}
+		if !queryMatched {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Handle handle the request and stop middleware chain if necessary
+func (redirect *Redirect) Handle(w http.ResponseWriter, r *http.Request) (bool, error) {
+	if !redirect.Match(r) {
+		return true, nil
+	}
+	handle, params, _ := redirect.router.Lookup(r.Method, r.URL.Path)
+	handle(w, r, params)
+	return false, nil
+}
+
+// IsProxy returns true if the route is a proxy route.
+// A proxy route has a complete URL in its "to" part.
+// The route should act as a reverse proxy if it's a proxy route.
+func (redirect *Redirect) IsProxy() bool {
+	return strings.HasPrefix(redirect.To, "http")
+}
+
+// compileRedirectTo returns a string representing the destination of a request
 // based on matched route, placeholder, splat, and query params.
-func (route *Route) CompileRedirectTo(r *http.Request, ps httprouter.Params) string {
-	var pattern = route.To
+func (redirect *Redirect) compileRedirectTo(r *http.Request, ps httprouter.Params) string {
+	var pattern = redirect.To
 	// is there any splat in the pattern?
 	if strings.HasSuffix(pattern, ":splat") {
 		splat := ps.ByName("splat")
@@ -38,9 +79,9 @@ func (route *Route) CompileRedirectTo(r *http.Request, ps httprouter.Params) str
 	}
 
 	// does this require query param matching?
-	if len(route.Queries) > 0 {
+	if len(redirect.Queries) > 0 {
 		result := pattern
-		for query, varName := range route.Queries {
+		for query, varName := range redirect.Queries {
 			result = strings.Replace(result, fmt.Sprintf(":%s", varName), r.URL.Query().Get(query), 1)
 		}
 		return result
@@ -62,56 +103,14 @@ func (route *Route) CompileRedirectTo(r *http.Request, ps httprouter.Params) str
 	return pattern
 }
 
-// Handler is a httprouter handler
-func (route *Route) Handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	// if there's queries to match
-	if len(route.Queries) > 0 {
-		queryMatched := true
-		for _, q := range route.Queries {
-			if r.URL.Query().Get(q) == "" {
-				queryMatched = false
-				break
-			}
-		}
-		if queryMatched {
-			route.statusCodeHandler(w, r, ps)
-		} else {
-			http.ServeFile(w, r, filepath.Join(route.wd, r.URL.Path))
-		}
+func (redirect *Redirect) handler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	if redirect.StatusCode >= 300 && redirect.StatusCode < 400 {
+		http.Redirect(w, r, redirect.compileRedirectTo(r, ps), redirect.StatusCode)
 		return
 	}
 
-	route.statusCodeHandler(w, r, ps)
-	return
-}
-
-// IsProxy returns true if the route is a proxy route.
-// A proxy route has a complete URL in its "to" part.
-// The route should act as a reverse proxy if it's a proxy route.
-func (route *Route) IsProxy() bool {
-	return strings.HasPrefix(route.To, "http")
-}
-
-// HookTo hook the route to a router
-func (route *Route) HookTo(router *httprouter.Router) {
-	if route.IsProxy() {
-		// hook to all methods if it's a proxy
-		for _, method := range METHODS {
-			router.Handle(method, route.Match, route.Handler)
-		}
-	} else {
-		router.GET(route.Match, route.Handler)
-	}
-}
-
-func (route *Route) statusCodeHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	if route.StatusCode >= 300 && route.StatusCode < 400 {
-		http.Redirect(w, r, route.CompileRedirectTo(r, ps), route.StatusCode)
-		return
-	}
-
-	if route.IsProxy() {
-		req, err := http.NewRequest(r.Method, route.To, r.Body)
+	if redirect.IsProxy() {
+		req, err := http.NewRequest(r.Method, redirect.To, r.Body)
 		if err != nil {
 			w.WriteHeader(500)
 			return
@@ -137,11 +136,11 @@ func (route *Route) statusCodeHandler(w http.ResponseWriter, r *http.Request, ps
 		return
 	}
 
-	http.ServeFile(w, r, filepath.Join(route.wd, route.CompileRedirectTo(r, ps)))
+	http.ServeFile(w, r, filepath.Join(redirect.wd, redirect.compileRedirectTo(r, ps)))
 }
 
-// NewRoute returns a route based on given redirect rule.
-func NewRoute(wd string, line []byte) (*Route, error) {
+// NewRedirect returns a route based on given redirect rule.
+func NewRedirect(wd string, line []byte) (*Redirect, error) {
 	// remove all comments
 	comment := regexp.MustCompile("#.+")
 	rule := comment.ReplaceAll(line, []byte(""))
@@ -162,7 +161,7 @@ func NewRoute(wd string, line []byte) (*Route, error) {
 		return nil, fmt.Errorf("Invalid Redirect Rule: %s", line)
 	}
 
-	route := Route{Queries: make(map[string]string), wd: wd}
+	redirect := Redirect{Queries: make(map[string]string), wd: wd, router: httprouter.New()}
 
 	// parse match
 	matcher, fields := takeField(fields)
@@ -170,7 +169,7 @@ func NewRoute(wd string, line []byte) (*Route, error) {
 	if strings.HasSuffix(matcher, "*") {
 		matcher = matcher + "splat"
 	}
-	route.Match = matcher
+	redirect.From = matcher
 
 	// parse query params and to
 	// loop until we see and finished a redirect "to"
@@ -179,9 +178,9 @@ func NewRoute(wd string, line []byte) (*Route, error) {
 		f, fields = takeField(fields)
 		// if we got a query params
 		if t := strings.Split(f, "=:"); len(t) > 1 && !strings.Contains(f, "/") {
-			route.Queries[t[0]] = t[1]
+			redirect.Queries[t[0]] = t[1]
 		} else {
-			route.To = f
+			redirect.To = f
 			break
 		}
 	}
@@ -191,14 +190,14 @@ func NewRoute(wd string, line []byte) (*Route, error) {
 	if len(fields) > 0 {
 		c, fields = takeField(fields)
 		if strings.HasSuffix(c, "!") {
-			route.Shadowing = true
+			redirect.Shadowing = true
 			c = c[0 : len(c)-1]
 		}
 		code, err := strconv.Atoi(c)
 		if err != nil {
 			return nil, fmt.Errorf("Invalid Status Code: %s", line)
 		}
-		route.StatusCode = code
+		redirect.StatusCode = code
 	}
 
 	// must be error if there's still something left
@@ -207,11 +206,20 @@ func NewRoute(wd string, line []byte) (*Route, error) {
 	}
 
 	// default status code
-	if route.StatusCode == 0 {
-		route.StatusCode = 301
+	if redirect.StatusCode == 0 {
+		redirect.StatusCode = 301
 	}
 
-	return &route, nil
+	if redirect.IsProxy() {
+		// hook to all methods if it's a proxy
+		for _, method := range METHODS {
+			redirect.router.Handle(method, redirect.From, redirect.handler)
+		}
+	} else {
+		redirect.router.GET(redirect.From, redirect.handler)
+	}
+
+	return &redirect, nil
 }
 
 // unshift a string because I'm lazy

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,19 +13,22 @@ type FileServer struct {
 	WorkingDir string
 }
 
-// ServeHTTP Serving static files without director index
-func (s FileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
-	path := r.URL.Path
+func (s FileServer) Match(r *http.Request) bool {
+	return !strings.HasSuffix(r.URL.Path, "/")
+}
 
-	if strings.HasSuffix(path, "/") {
-		// ignore directory
-		return nil
+// ServeHTTP Serving static files without director index
+func (s FileServer) Handle(w http.ResponseWriter, r *http.Request) (bool, error) {
+	if !s.Match(r) {
+		return true, nil
 	}
+
+	path := r.URL.Path
 
 	path = filepath.Join(s.WorkingDir, path[1:])
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		http.ServeFile(w, r, path)
-		return fmt.Errorf("File Served")
+		return false, nil
 	}
-	return nil
+	return true, nil
 }

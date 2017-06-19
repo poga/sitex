@@ -21,36 +21,44 @@ var (
 	realm        = "Please enter your username and password for this site"
 )
 
-// HeaderRouter contains routes defined in _header file.
-type HeaderRouter struct {
-	*httprouter.Router
+// Header contains routes defined in _header file.
+type Header struct {
+	router *httprouter.Router
+}
+
+func (header Header) Match(r *http.Request) bool {
+	handle, _, _ := header.router.Lookup(r.Method, r.URL.Path)
+	return handle != nil
 }
 
 // Handle checks if the router should process the given request.
 // It's a noop if the router should not process the request.
 // Returns error if the response is finalized and we shouldn't return anything more.
-func (router HeaderRouter) Handle(w http.ResponseWriter, r *http.Request, ps httprouter.Params) error {
-	handle, _, _ := router.Lookup("GET", r.URL.Path)
+func (header Header) Handle(w http.ResponseWriter, r *http.Request) (bool, error) {
+	if !header.Match(r) {
+		return true, nil
+	}
+	handle, params, _ := header.router.Lookup("GET", r.URL.Path)
 	if handle != nil {
-		handle(w, r, ps)
+		handle(w, r, params)
 
 		// if there's an authentication error. stop the handler chain
 		if w.Header().Get("WWW-Authenticate") != "" {
-			return fmt.Errorf("Unauthorized")
+			return false, fmt.Errorf("Unauthorized")
 		}
 	}
-	return nil
+	return true, nil
 }
 
-// NewHeaderRouters returns an list of HeaderRouters from given rules.
+// NewHeaders returns an list of HeaderRouters from given rules.
 // Every path will creates a HeaderRouter
-func NewHeaderRouters(config []byte) ([]HeaderRouter, error) {
-	routers := make([]HeaderRouter, 0)
+func NewHeaders(config []byte) ([]Header, error) {
+	headers := make([]Header, 0)
 
 	lines := bytes.Split(config, []byte("\n"))
 
 	currentPath := &path{}
-	router := HeaderRouter{httprouter.New()}
+	header := Header{router: httprouter.New()}
 	for _, line := range lines {
 		// skip comment line
 		if commentLine.Match(line) {
@@ -70,9 +78,9 @@ func NewHeaderRouters(config []byte) ([]HeaderRouter, error) {
 					return nil, fmt.Errorf("Expect header but got a path: %s", line)
 				}
 				// the path is complete, push to paths
-				router.GET(currentPath.Path, currentPath.Handler)
-				routers = append(routers, router)
-				router = HeaderRouter{httprouter.New()}
+				header.router.GET(currentPath.Path, currentPath.Handler)
+				headers = append(headers, header)
+				header = Header{router: httprouter.New()}
 			}
 			// get a new path
 			p := parsePath(line)
@@ -105,15 +113,14 @@ func NewHeaderRouters(config []byte) ([]HeaderRouter, error) {
 
 	if currentPath.Path != "" {
 		if len(currentPath.Headers) > 0 || len(currentPath.Auths) > 0 {
-			router.GET(currentPath.Path, currentPath.Handler)
-			routers = append(routers, router)
-			router = HeaderRouter{httprouter.New()}
+			header.router.GET(currentPath.Path, currentPath.Handler)
+			headers = append(headers, header)
 		} else {
 			return nil, fmt.Errorf("unclosed path")
 		}
 	}
 
-	return routers, nil
+	return headers, nil
 }
 
 type path struct {

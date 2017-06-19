@@ -2,43 +2,55 @@ package main
 
 import (
 	"net/http"
-
-	"github.com/julienschmidt/httprouter"
 )
 
 type MainRouter struct {
-	headerRouters      []HeaderRouter
-	shadowingRouter    *httprouter.Router
-	nonShadowingRouter *httprouter.Router
-	fileServer         FileServer
+	headers               []Header
+	shadowingRedirects    []*Redirect
+	nonShadowingRedirects []*Redirect
+	fileServer            FileServer
 }
 
 func (main MainRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	for _, headerRouter := range main.headerRouters {
-		handler, _, _ := headerRouter.Lookup(r.Method, r.URL.Path)
-		if handler != nil {
-			err := headerRouter.Handle(w, r, nil)
-			if err != nil {
-				return
-			}
+	for _, header := range main.headers {
+		next, err := header.Handle(w, r)
+		if err != nil {
+			return
+		}
+
+		if !next {
+			return
 		}
 	}
 
-	handler, _, _ := main.shadowingRouter.Lookup(r.Method, r.URL.Path)
-	if handler != nil {
-		handler(w, r, nil)
-		return
+	for _, redirect := range main.shadowingRedirects {
+		next, err := redirect.Handle(w, r)
+		if err != nil {
+			return
+		}
+
+		if !next {
+			return
+		}
 	}
 
-	err := main.fileServer.ServeHTTP(w, r)
+	next, err := main.fileServer.Handle(w, r)
 	if err != nil {
 		return
 	}
-
-	handler, _, _ = main.nonShadowingRouter.Lookup(r.Method, r.URL.Path)
-	if handler != nil {
-		handler(w, r, nil)
+	if !next {
 		return
+	}
+
+	for _, redirect := range main.nonShadowingRedirects {
+		next, err := redirect.Handle(w, r)
+		if err != nil {
+			return
+		}
+
+		if !next {
+			return
+		}
 	}
 
 	w.WriteHeader(404)
