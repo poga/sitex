@@ -25,6 +25,9 @@ func main() {
 
 	addr := fmt.Sprintf(":%d", *port)
 	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	fmt.Printf("Serving %s at %s\n", *dir, addr)
 	server.Start(listener)
