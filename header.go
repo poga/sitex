@@ -44,7 +44,7 @@ func (header *Header) Handle(w http.ResponseWriter, r *http.Request) (bool, erro
 
 		// if there's an authentication error. stop the handler chain
 		if w.Header().Get("WWW-Authenticate") != "" {
-			return false, fmt.Errorf("Unauthorized")
+			return false, nil
 		}
 	}
 	return true, nil

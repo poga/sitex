@@ -12,46 +12,31 @@ type MainRouter struct {
 }
 
 func (main MainRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	for _, header := range main.headers {
-		next, err := header.Handle(w, r)
-		if err != nil {
-			return
-		}
+	err := run([][]middleware{
+		main.headers,
+		main.shadowingRedirects,
+		[]middleware{main.fileServer},
+		main.nonShadowingRedirects,
+	}, w, r)
 
-		if !next {
-			return
-		}
-	}
-
-	for _, redirect := range main.shadowingRedirects {
-		next, err := redirect.Handle(w, r)
-		if err != nil {
-			return
-		}
-
-		if !next {
-			return
-		}
-	}
-
-	next, err := main.fileServer.Handle(w, r)
 	if err != nil {
-		return
+		w.WriteHeader(500)
 	}
-	if !next {
-		return
-	}
+}
 
-	for _, redirect := range main.nonShadowingRedirects {
-		next, err := redirect.Handle(w, r)
-		if err != nil {
-			return
-		}
-
-		if !next {
-			return
+func run(layers [][]middleware, w http.ResponseWriter, r *http.Request) error {
+	for _, layer := range layers {
+		for _, mw := range layer {
+			next, err := mw.Handle(w, r)
+			if err != nil {
+				return err
+			}
+			if !next {
+				return nil
+			}
 		}
 	}
 
 	w.WriteHeader(404)
+	return nil
 }
