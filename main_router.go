@@ -15,7 +15,7 @@ func (main MainRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	run([][]middleware{
 		main.headers,
 		main.shadowingRedirects,
-		[]middleware{main.fileServer},
+		{main.fileServer},
 		main.nonShadowingRedirects,
 	}, w, r)
 }
