@@ -26,7 +26,7 @@ type Header struct {
 	router *httprouter.Router
 }
 
-func (header Header) Match(r *http.Request) bool {
+func (header *Header) Match(r *http.Request) bool {
 	handle, _, _ := header.router.Lookup(r.Method, r.URL.Path)
 	return handle != nil
 }
@@ -34,7 +34,7 @@ func (header Header) Match(r *http.Request) bool {
 // Handle checks if the router should process the given request.
 // It's a noop if the router should not process the request.
 // Returns error if the response is finalized and we shouldn't return anything more.
-func (header Header) Handle(w http.ResponseWriter, r *http.Request) (bool, error) {
+func (header *Header) Handle(w http.ResponseWriter, r *http.Request) (bool, error) {
 	if !header.Match(r) {
 		return true, nil
 	}
@@ -52,13 +52,13 @@ func (header Header) Handle(w http.ResponseWriter, r *http.Request) (bool, error
 
 // NewHeaders returns an list of HeaderRouters from given rules.
 // Every path will creates a HeaderRouter
-func NewHeaders(config []byte) ([]Header, error) {
-	headers := make([]Header, 0)
+func NewHeaders(config []byte) ([]middleware, error) {
+	headers := make([]middleware, 0)
 
 	lines := bytes.Split(config, []byte("\n"))
 
 	currentPath := &path{}
-	header := Header{router: httprouter.New()}
+	header := &Header{router: httprouter.New()}
 	for _, line := range lines {
 		// skip comment line
 		if commentLine.Match(line) {
@@ -80,7 +80,7 @@ func NewHeaders(config []byte) ([]Header, error) {
 				// the path is complete, push to paths
 				header.router.GET(currentPath.Path, currentPath.Handler)
 				headers = append(headers, header)
-				header = Header{router: httprouter.New()}
+				header = &Header{router: httprouter.New()}
 			}
 			// get a new path
 			p := parsePath(line)

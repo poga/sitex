@@ -325,17 +325,17 @@ func TestPathBasicAuthAndHeader(t *testing.T) {
 	require.Equal(t, 401, res.Code)
 }
 
-func testHeader(header Header, req *http.Request) *httptest.ResponseRecorder {
+func testHeader(mw middleware, req *http.Request) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
-	header.Handle(rec, req)
+	mw.Handle(rec, req)
 
 	return rec
 }
 
-func testHeaderAuth(header Header, req *http.Request, username string, password string) *httptest.ResponseRecorder {
+func testHeaderAuth(mw middleware, req *http.Request, username string, password string) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
 	req.SetBasicAuth(username, password)
-	header.Handle(rec, req)
+	mw.Handle(rec, req)
 
 	return rec
 }

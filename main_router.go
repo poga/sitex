@@ -5,10 +5,10 @@ import (
 )
 
 type MainRouter struct {
-	headers               []Header
-	shadowingRedirects    []*Redirect
-	nonShadowingRedirects []*Redirect
-	fileServer            FileServer
+	headers               []middleware
+	shadowingRedirects    []middleware
+	nonShadowingRedirects []middleware
+	fileServer            middleware
 }
 
 func (main MainRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {

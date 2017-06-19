@@ -28,17 +28,17 @@ func NewServer(directory string) (*Server, error) {
 	redirectConfig := filepath.Join(directory, "_redirects")
 	headerConfig := filepath.Join(directory, "_headers")
 
-	var headerRouters []Header
+	var headers []middleware
 	data, err := ioutil.ReadFile(headerConfig)
 	if err == nil {
-		headerRouters, err = loadHeaderRouters(directory, data)
+		headers, err = loadHeaders(directory, data)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	var shadowingRedirects []*Redirect
-	var nonShadowingRedirects []*Redirect
+	var shadowingRedirects []middleware
+	var nonShadowingRedirects []middleware
 	data, err = ioutil.ReadFile(redirectConfig)
 	if err == nil {
 		shadowingRedirects, nonShadowingRedirects, err = loadRedirects(directory, data)
@@ -47,18 +47,18 @@ func NewServer(directory string) (*Server, error) {
 		}
 	}
 	fileServer := FileServer{directory}
-	mainRouter := MainRouter{headerRouters, shadowingRedirects, nonShadowingRedirects, fileServer}
+	mainRouter := MainRouter{headers, shadowingRedirects, nonShadowingRedirects, fileServer}
 
 	return &Server{mainRouter}, nil
 }
 
-func loadHeaderRouters(directory string, config []byte) ([]Header, error) {
+func loadHeaders(directory string, config []byte) ([]middleware, error) {
 	return NewHeaders(config)
 }
 
-func loadRedirects(directory string, config []byte) ([]*Redirect, []*Redirect, error) {
-	shadowingRedirects := make([]*Redirect, 0)
-	nonShadowingRedirects := make([]*Redirect, 0)
+func loadRedirects(directory string, config []byte) ([]middleware, []middleware, error) {
+	shadowingRedirects := make([]middleware, 0)
+	nonShadowingRedirects := make([]middleware, 0)
 	lines := bytes.Split(config, []byte("\n"))
 	for _, line := range lines {
 		redirect, err := NewRedirect(directory, line)
