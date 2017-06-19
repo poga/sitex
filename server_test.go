@@ -51,6 +51,16 @@ func TestExampleServer(t *testing.T) {
 	require.Equal(t, 301, resp.StatusCode)
 	require.Equal(t, "/test-2.json", resp.Header.Get("Location"))
 
+	resp, err = sendReq("GET", "http://localhost:9069/bar?page=2")
+	require.NoError(t, err)
+	require.Equal(t, 301, resp.StatusCode)
+	require.Equal(t, "/test-2.json", resp.Header.Get("Location"))
+
+	resp, err = sendReq("GET", "http://localhost:9069/bar")
+	require.NoError(t, err)
+	require.Equal(t, 301, resp.StatusCode)
+	require.Equal(t, "/test.json", resp.Header.Get("Location"))
+
 	resp, err = sendReq("GET", "http://localhost:9069/test-2.json")
 	require.NoError(t, err)
 	require.Equal(t, 200, resp.StatusCode)

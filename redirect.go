@@ -36,8 +36,8 @@ func (redirect *Redirect) Match(r *http.Request) bool {
 	// check if query params matched the request
 	if len(redirect.Queries) > 0 {
 		queryMatched := true
-		for _, q := range redirect.Queries {
-			if r.URL.Query().Get(q) == "" {
+		for query := range redirect.Queries {
+			if r.URL.Query().Get(query) == "" {
 				queryMatched = false
 				break
 			}
@@ -81,8 +81,8 @@ func (redirect *Redirect) compileRedirectTo(r *http.Request, ps httprouter.Param
 	// does this require query param matching?
 	if len(redirect.Queries) > 0 {
 		result := pattern
-		for query, varName := range redirect.Queries {
-			result = strings.Replace(result, fmt.Sprintf(":%s", varName), r.URL.Query().Get(query), 1)
+		for query, placeholder := range redirect.Queries {
+			result = strings.Replace(result, fmt.Sprintf(":%s", placeholder), r.URL.Query().Get(query), 1)
 		}
 		return result
 	}
