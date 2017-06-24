@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/poga/sitex/branch/master/graph/badge.svg)](https://codecov.io/gh/poga/sitex)
 [![Build Status](https://travis-ci.org/poga/sitex.svg?branch=master)](https://travis-ci.org/poga/sitex)
 
-A file server with support to Netlify's [redirect and rewrite rules](https://www.netlify.com/docs/redirects/), [custom headers, and basic auth](https://www.netlify.com/docs/headers-and-basic-auth/).
+A HTTP server with support to Netlify's [redirect and rewrite rules](https://www.netlify.com/docs/redirects/), [custom headers, and basic auth](https://www.netlify.com/docs/headers-and-basic-auth/).
 
 `go get -u github.com/poga/sitex`
 
