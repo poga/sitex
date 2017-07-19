@@ -6,6 +6,8 @@
 
 A HTTP server with support to Netlify's [redirect and rewrite rules](https://www.netlify.com/docs/redirects/), [custom headers, and basic auth](https://www.netlify.com/docs/headers-and-basic-auth/).
 
+**Note**: Since Netlify is a proprietary service. It's really hard to fully mimic Netlify's behavior. So most implementation here is based on guessing and intuition.
+
 `go get -u github.com/poga/sitex`
 
 ## Usage
